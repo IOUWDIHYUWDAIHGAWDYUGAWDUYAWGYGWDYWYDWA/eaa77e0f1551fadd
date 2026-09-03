@@ -1,15 +1,18 @@
-name: vybot CI & Auto-Deployment
+name: vybot 24/7 GitHub Actions Host
 
 on:
+  schedule:
+    - cron: '0 */5 * * *' # Her 5 saatte bir otomatik yenilenir
+  workflow_dispatch:      # Manuel başlatma butonu
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+
+permissions: write-all
 
 jobs:
-  build-and-run:
+  run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
 
     steps:
       - name: 📥 Kodu Çek (Checkout)
@@ -34,12 +37,30 @@ jobs:
           fi
           node decrypt.js "$DECRYPTION_KEY"
 
-      - name: 🧪 Sistem Testi (Veritabanı ve Modüller)
-        run: npm test
-
-      - name: 🚀 Komutları Discord'a Yükle (Deploy Commands)
-        if: env.DISCORD_TOKEN != '' && env.CLIENT_ID != ''
+      - name: 🚀 Komutları Discord API'ye Güncelle (Deploy)
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
-        run: npm run deploy
+        run: node src/deploy-commands.js
+
+      - name: 🤖 Botu Çalıştır (5 Saatlik Döngü)
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        run: |
+          echo "========================================================"
+          echo "⚡ vybot başlatılıyor..."
+          echo "⏰ Bu oturum 4 saat 55 dakika boyunca kesintisiz çalışacak."
+          echo "🔄 Süre dolduğunda kendini otomatik yenileyip sıradaki Actions'ı başlatacak."
+          echo "========================================================"
+          # 4 saat 55 dakika = 17700 saniye sonra temiz sonlanma
+          timeout 17700 node src/index.js || true
+          echo "Oturum süresi tamamlandı, yenileniyor..."
+
+      - name: 🔄 Sıradaki 5 Saatlik Döngüyü Başlat (Auto-Relay)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚀 Yeni 5 saatlik Actions döngüsü tetikleniyor..."
+          gh workflow run main.yml || true
