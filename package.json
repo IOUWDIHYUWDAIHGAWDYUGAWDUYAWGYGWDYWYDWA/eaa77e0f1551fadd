@@ -1,0 +1,21 @@
+{
+  "name": "vybot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node runner.js",
+    "start:direct": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "test": "node -e \"require('./src/database/db.js'); console.log('Database OK');\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.8",
+    "better-sqlite3": "^13.0.3",
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2"
+  }
+}
