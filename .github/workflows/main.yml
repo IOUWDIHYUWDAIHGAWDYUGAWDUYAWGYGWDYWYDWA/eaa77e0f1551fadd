@@ -58,7 +58,7 @@ jobs:
           echo "Oturum süresi tamamlandı, yenileniyor..."
 
       - name: 🔄 Sıradaki 5 Saatlik Döngüyü Başlat (Auto-Relay)
-        if: always()
+        if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
