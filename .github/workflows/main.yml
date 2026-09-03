@@ -1,0 +1,45 @@
+name: vybot CI & Auto-Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Kodu Çek (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 🟢 Node.js 22 Kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 📦 Bağımlılıkları Yükle (npm install)
+        run: npm install
+
+      - name: 🔓 Şifreli Kodları Çöz (Decrypt Bundle)
+        env:
+          DECRYPTION_KEY: ${{ secrets.DECRYPTION_KEY }}
+        run: |
+          if [ -z "$DECRYPTION_KEY" ]; then
+            echo "❌ HATA: GitHub Secrets içerisine 'DECRYPTION_KEY' eklenmemiş!"
+            exit 1
+          fi
+          node decrypt.js "$DECRYPTION_KEY"
+
+      - name: 🧪 Sistem Testi (Veritabanı ve Modüller)
+        run: npm test
+
+      - name: 🚀 Komutları Discord'a Yükle (Deploy Commands)
+        if: env.DISCORD_TOKEN != '' && env.CLIENT_ID != ''
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        run: npm run deploy

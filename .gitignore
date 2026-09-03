@@ -1,9 +1,14 @@
-node_modules/
-data/
-*.sqlite*
+# Hassas Dosyalar
 .env
 .env.*
 !.env.example
+data/
+*.sqlite*
 *.log
+node_modules/
 .DS_Store
 Thumbs.db
+
+# Açık Kaynakta Gizlenen Dizinler (Sadece bundle.enc içinde şifreli saklanır)
+src/
+runner.js
