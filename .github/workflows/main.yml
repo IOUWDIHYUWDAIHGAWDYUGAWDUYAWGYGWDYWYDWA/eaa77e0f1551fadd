@@ -72,6 +72,7 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node src/deploy-commands.js
 
       - name: 🤖 Botu Çalıştır (5 Saatlik Döngü)
@@ -80,6 +81,7 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GH_PERSONAL_TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           echo "========================================================"
           echo "⚡ vybot başlatılıyor..."
