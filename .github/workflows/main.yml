@@ -82,6 +82,7 @@ jobs:
           GH_PERSONAL_TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GITHUB_SETTINGS_RAW_URL: https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/main/guild-settings.json
         run: |
           echo "========================================================"
           echo "⚡ vybot başlatılıyor..."
