@@ -28,11 +28,6 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: 🌐 Cloudflare WARP Bağlan (Datacenter IP Engelini Kaldır)
-        uses: fscarmen/warp-on-actions@v1.3
-        with:
-          stack: dual
-
       - name: ⚡ Bağımlılık & yt-dlp Önbelleği (Cache)
         id: cache-tools
         uses: actions/cache@v4
