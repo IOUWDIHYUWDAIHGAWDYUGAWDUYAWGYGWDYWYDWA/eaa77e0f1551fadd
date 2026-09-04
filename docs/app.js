@@ -453,6 +453,81 @@ function switchTab(tabId) {
 function togglePlugin(pluginName, isEnabled) {
   state.plugins[pluginName] = isEnabled;
   showToast(`${pluginName} modülü ${isEnabled ? 'aktif edildi' : 'devre dışı bırakıldı'}!`, 'success');
+
+  // Modül durumunu kalıcı yap ve bot'a gönder
+  try { localStorage.setItem('vybot_plugins', JSON.stringify(state.plugins)); } catch (e) { /* yoksay */ }
+  pushToBot({ plugins: state.plugins }, (ok, err) => {
+    if (ok) showToast('Modül değişikliği BOTA GÖNDERİLDI! Sunucuda aktif oldu.', 'success');
+    else if (err === 'no-config') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Ayarlar → Bot Bağlantısı.', 'warning');
+    else showToast('Lokal kaydedildi, gönderilemedi: ' + err, 'warning');
+  });
+}
+
+/* ==========================================================================
+   BOT HTTP API KÖPRÜSÜ — Site → Bot entegrasyonu
+   ========================================================================== */
+function getBotApiConfig() {
+  let raw = '';
+  try { raw = localStorage.getItem('vybot_bot_api') || ''; } catch (e) { /* yoksay */ }
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function pushToBot(settings, cb) {
+  const cfg = getBotApiConfig();
+  if (!cfg || !cfg.url) {
+    if (cb) cb(false, 'no-config');
+    return;
+  }
+
+  const guildId = (state.selectedGuild && state.selectedGuild.id) || cfg.guildId || '';
+  const body = { guild_id: guildId, ...settings };
+
+  fetch(cfg.url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (cfg.key || 'vybot-web-2026')
+    },
+    body: JSON.stringify(body)
+  })
+  .then(r => r.json().then(j => ({ ok: r.ok, j })))
+  .then(({ ok, j }) => {
+    if (ok && j.ok) {
+      console.log('[BOT-KÖPRÜ] ✅ Ayarlar uygulandı:', j.appliedList || j);
+      if (cb) cb(true, null);
+    } else {
+      console.warn('[BOT-KÖPRÜ] ❌ Hata:', j.error || 'bilinmeyen');
+      if (cb) cb(false, j.error || 'api-error');
+    }
+  })
+  .catch(err => {
+    console.warn('[BOT-KÖPRÜ] ❌ Bağlantı hatası:', err.message);
+    if (cb) cb(false, err.message);
+  });
+}
+
+function testBotConnection(cb) {
+  const cfg = getBotApiConfig();
+  if (!cfg || !cfg.url) { if (cb) cb(false, 'no-config'); return; }
+
+  fetch(cfg.url.replace(/\/api\/.*$/, '') + '/api/health?key=' + encodeURIComponent(cfg.key || 'vybot-web-2026'))
+  .then(r => r.json().then(j => ({ ok: r.ok, j })))
+  .then(({ ok, j }) => {
+    if (ok && j.ok) {
+      if (cb) cb(true, `${j.bot} | ${j.guilds} sunucu | ${Math.floor(j.uptime)}s uptime`);
+    } else {
+      if (cb) cb(false, j.error || 'health-fail');
+    }
+  })
+  .catch(err => { if (cb) cb(false, err.message); });
+}
+
+function saveBotApiConfig(url, key, guildId) {
+  try {
+    localStorage.setItem('vybot_bot_api', JSON.stringify({ url, key, guildId }));
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ==========================================================================
@@ -847,6 +922,131 @@ function getPanelScope(mod) {
   return `vybot_panel_${guildName}_${mod}`;
 }
 
+/* ---- Bot HTTP API Köprüsü: site ayarlarını doğrudan bot'a gönderir ---- */
+
+function updateConnBadge(ok) {
+  const badge = document.getElementById('connStatusBadge');
+  if (!badge) return;
+  if (ok) {
+    badge.textContent = 'Bağlı ✓';
+    badge.style.borderColor = 'var(--accent-green)';
+    badge.style.color = 'var(--accent-green)';
+  } else {
+    badge.textContent = 'Bağlı Değil';
+    badge.style.borderColor = 'var(--accent-red)';
+    badge.style.color = 'var(--accent-red)';
+  }
+}
+
+function saveConnection() {
+  const urlInput = document.getElementById('botApiUrlInput');
+  const keyInput = document.getElementById('botApiKeyInput');
+  const guildInput = document.getElementById('botGuildIdInput');
+  if (!urlInput) return;
+
+  const url = urlInput.value.trim();
+  const key = keyInput ? keyInput.value.trim() : '';
+  const guildId = guildInput ? guildInput.value.trim() : '';
+
+  if (!saveBotApiConfig(url, key, guildId)) {
+    showToast('Kaydedilemedi (localStorage erişimi yok).', 'warning');
+    return;
+  }
+
+  updateConnBadge(!!url);
+  if (url) {
+    // Kaydettikten sonra hemen test et
+    testBotConnection((ok, info) => {
+      if (ok) showToast('Bot bağlantısı kaydedildi ve TEST BAŞARILI! → ' + info, 'success');
+      else showToast('Kaydedildi ama test BAŞARISIZ: ' + info + ' — URL/key kontrol et.', 'warning');
+    });
+  } else {
+    showToast('Bağlantı bilgileri temizlendi.', 'info');
+  }
+}
+
+function loadConnectionPanel() {
+  let raw = '';
+  try { raw = localStorage.getItem('vybot_bot_api') || ''; } catch (e) { return; }
+  if (!raw) return;
+  try {
+    const cfg = JSON.parse(raw);
+    const urlInput = document.getElementById('botApiUrlInput');
+    const keyInput = document.getElementById('botApiKeyInput');
+    const guildInput = document.getElementById('botGuildIdInput');
+    if (urlInput) urlInput.value = cfg.url || '';
+    if (keyInput) keyInput.value = cfg.key || '';
+    if (guildInput) guildInput.value = cfg.guildId || '';
+    if (cfg.url) updateConnBadge(true);
+  } catch (e) { /* yoksay */ }
+}
+
+function testConnection() {
+  testBotConnection((ok, info) => {
+    if (ok) {
+      showToast('Bot bağlantısı BAŞARILI! → ' + info, 'success');
+      updateConnBadge(true);
+    } else {
+      showToast('Bağlantı hatası: ' + info + ' — Bot ÇALIŞIYOR mu? API port açık mı?', 'warning');
+      updateConnBadge(false);
+    }
+  });
+}
+
+function collectAllPanelSettings() {
+  const guildName = state.selectedGuild ? state.selectedGuild.name : 'vybots Cyber HQ';
+  const mods = {};
+
+  document.querySelectorAll('[data-settings]').forEach(block => {
+    const mod = block.dataset.settings;
+    if (mod === 'connection') return;
+    const modData = {};
+    block.querySelectorAll('[data-set]').forEach(inp => {
+      modData[inp.dataset.set] = inp.type === 'checkbox' ? inp.checked : inp.value;
+    });
+    mods[mod] = modData;
+  });
+
+  mods.plugins = { ...(state.plugins || {}) };
+
+  return {
+    version: 2,
+    updated_at: new Date().toISOString(),
+    guilds: { [guildName]: mods }
+  };
+}
+
+function publishSettingsToGitHub(callback) {
+  const token = getConnectionToken();
+  if (!token) { if (callback) callback(false, 'no-token'); return; }
+
+  const payload = JSON.stringify(collectAllPanelSettings(), null, 2);
+  const api = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_SETTINGS_PATH}`;
+  const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' };
+
+  // Önce mevcut dosyanın sha'sını al (güncelleme için gerekli)
+  fetch(api, { headers: headers })
+    .then(r => {
+      if (r.status === 404) return { sha: null };
+      if (!r.ok) throw new Error('GitHub ' + r.status);
+      return r.json();
+    })
+    .then(file => fetch(api, {
+      method: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'web-panel: sunucu ayar güncellemesi (otomatik)',
+        content: btoa(unescape(encodeURIComponent(payload))),
+        sha: file.sha || undefined
+      })
+    }))
+    .then(r => {
+      if (!r.ok) throw new Error('GitHub ' + r.status);
+      if (callback) callback(true);
+    })
+    .catch(err => { if (callback) callback(false, err.message); });
+}
+
 function savePanelSettings(mod) {
   const block = document.querySelector(`[data-settings="${mod}"]`);
   if (!block) return;
@@ -860,8 +1060,15 @@ function savePanelSettings(mod) {
     localStorage.setItem(getPanelScope(mod), JSON.stringify(data));
   } catch (e) { /* localStorage kapalı olabilir */ }
 
-  showToast('Ayarlar kaydedildi ve bot ile senkronize edildi!', 'success');
   if (mod === 'leaderboard') renderLeaderboard();
+
+  // Canlı köprü: ayarları botun okuduğu depo dosyasına gönder
+  pushToBot({ [mod]: data }, (ok, err) => {
+    if (ok) showToast('Ayarlar kaydedildi ve BOTA GÖNDERİLDI! Sunucuda aktif.', 'success');
+    else if (err === 'no-config') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Bot Bağlantısı panelini doldurun.', 'warning');
+    else showToast('Ayarlar lokal kaydedildi ancak gönderilemedi: ' + err, 'warning');
+    if (mod !== 'connection') updateConnBadge(ok);
+  });
 }
 
 function resetPanelSettings(mod) {
@@ -900,6 +1107,7 @@ function loadPanelSettings() {
     });
   });
 
+  loadConnectionPanel();
   renderLeaderboard();
 }
 

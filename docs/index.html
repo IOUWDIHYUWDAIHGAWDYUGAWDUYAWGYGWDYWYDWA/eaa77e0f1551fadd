@@ -2845,7 +2845,7 @@ input:checked + .slider-switch:before {
               </div>
             </div>
 
-            <div class="settings-block">
+            <div class="settings-block" data-settings="welcome">
               <div class="block-title-row">
                 <h3><i class="fa-solid fa-sliders"></i> Karşılama Kuralları</h3>
                 <span class="badge-tag badge-green">Aktif</span>
@@ -2856,7 +2856,7 @@ input:checked + .slider-switch:before {
                   <h4>Karşılama Kanalı</h4>
                   <p>Hoş geldin mesajlarının gönderileceği Discord metin kanalı.</p>
                 </div>
-                <select class="discord-select" style="width: 220px;">
+                <select class="discord-select" style="width: 220px;" data-set="channel">
                   <option selected># 🚪・gelen-giden</option>
                   <option># 💬・genel-sohbet</option>
                   <option># 📢・duyurular</option>
@@ -2868,7 +2868,7 @@ input:checked + .slider-switch:before {
                   <h4>Otomatik Üye Rolü (Auto-Role)</h4>
                   <p>Sunucuya giriş yapan üyeye anında verilecek varsayılan rol.</p>
                 </div>
-                <select class="discord-select" style="width: 220px;">
+                <select class="discord-select" style="width: 220px;" data-set="autoRole">
                   <option selected>@ Üye</option>
                   <option>@ Topluluk</option>
                   <option>@ Kayıtsız</option>
@@ -2880,7 +2880,7 @@ input:checked + .slider-switch:before {
                   <h4>Özel Karşılama Başlığı</h4>
                   <p>Gömülü mesaj kartında görüntülenecek başlık.</p>
                 </div>
-                <input type="text" class="discord-input" id="welcomeTitleInput" value="Sunucumuza Hoş Geldin!" style="width: 280px;" oninput="updateWelcomePreview()">
+                <input type="text" class="discord-input" id="welcomeTitleInput" value="Sunucumuza Hoş Geldin!" style="width: 280px;" data-set="title" oninput="updateWelcomePreview()">
               </div>
 
               <div class="setting-item-row">
@@ -2888,7 +2888,16 @@ input:checked + .slider-switch:before {
                   <h4>Karşılama Mesajı Metni</h4>
                   <p><code>{user}</code> kullanıcıyı etiketler, <code>{server}</code> sunucu adını yazar.</p>
                 </div>
-                <input type="text" class="discord-input" id="welcomeDescInput" value="Selam {user}, **{server}** ailesine katıldığın için çok mutluyuz! Kuralları okumayı unutma." style="width: 400px;" oninput="updateWelcomePreview()">
+                <input type="text" class="discord-input" id="welcomeDescInput" value="Selam {user}, **{server}** ailesine katıldığın için çok mutluyuz! Kuralları okumayı unutma." style="width: 400px;" data-set="desc" oninput="updateWelcomePreview()">
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('welcome')">
+                  <i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet & Sunucuya Uygula
+                </button>
+                <button class="btn btn-secondary" onclick="resetPanelSettings('welcome')" style="border-color: var(--accent-red); color: var(--accent-red);">
+                  <i class="fa-solid fa-rotate-left"></i> Varsayılana Dön
+                </button>
               </div>
             </div>
 
@@ -3203,6 +3212,54 @@ input:checked + .slider-switch:before {
               <div class="settings-block" style="text-align: center; padding: 24px;">
                 <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 6px;">BOT ÇALIŞMA SÜRESİ</div>
                 <div style="font-size: 28px; font-weight: 900; color: var(--blurple);">%99.98</div>
+              </div>
+            </div>
+
+            <!-- Bot Bağlantısı: HTTP API Köprüsü -->
+            <div class="settings-block" data-settings="connection">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-plug"></i> Bot Bağlantısı (Canlı HTTP API Köprüsü)</h3>
+                <span class="badge-tag" id="connStatusBadge" style="border-color: var(--accent-red); color: var(--accent-red);">Bağlı Değil</span>
+              </div>
+
+              <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 16px;">
+                Bot sunucunuzda çalışırken <b>doğrudan bot'a HTTP POST</b> gönderir — ayarlar anında
+                Discord sunucunuza uygulanır (hoş geldin, seviye, güvenlik, modül aç/kapa vb.).
+                <b>Token gerekmez</b> — sadece botun API adresi ve anahtar lazım.
+                <code>API_KEY</code> botun <code>.env</code> dosyasında, default: <code>vybot-web-2026</code>.
+              </p>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Bot API Adresi</h4>
+                  <p>Botun çalıştığı sunucu + port. Örn: <code>http://IP:8080/api/settings</code></p>
+                </div>
+                <input type="text" class="discord-input" id="botApiUrlInput" placeholder="http://1.2.3.4:8080/api/settings" style="width: 340px;">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>API Key</h4>
+                  <p>Botun <code>.env</code> dosyasındaki <code>API_KEY</code> değeri.</p>
+                </div>
+                <input type="password" class="discord-input" id="botApiKeyInput" placeholder="vybot-web-2026" style="width: 340px;">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Guild ID (opsiyonel)</h4>
+                  <p>Boş bırakılanrsa aktif sunucu otomatik kullanılır.</p>
+                </div>
+                <input type="text" class="discord-input" id="botGuildIdInput" placeholder="1536835757132751048" style="width: 340px;">
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="saveConnection()">
+                  <i class="fa-solid fa-link"></i> Bağlantıyı Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="testConnection()">
+                  <i class="fa-solid fa-satellite-dish"></i> Bağlantıyı Test Et
+                </button>
               </div>
             </div>
           </div>
