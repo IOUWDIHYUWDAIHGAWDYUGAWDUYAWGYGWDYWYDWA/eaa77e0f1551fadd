@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initGuildSearch();
   initCanvasRank();
   renderGuildGrid();
+  showView('landing');
+  switchTab('plugins-home');
 });
 
 /* ==========================================================================
