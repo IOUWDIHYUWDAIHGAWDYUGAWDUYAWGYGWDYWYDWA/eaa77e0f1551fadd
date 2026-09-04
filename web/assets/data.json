@@ -1,0 +1,260 @@
+{
+  "botName": "vybot",
+  "tagline": "Gelişmiş Çok Amaçlı Discord Botu",
+  "description": "MEE6, Dyno, Carl-bot ve Ticket Tool gibi piyasanın en iyi botlarının öne çıkan özelliklerini tek bir çatıda toplayan modern, güvenli ve modüler bir Discord botudur.",
+  "github": "https://github.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd",
+  "clientId": "1545157265831759903",
+  "inviteUrl": "",
+  "permissions": 8,
+  "stats": {
+    "features": "30+",
+    "categories": "8",
+    "uptime": "7/24"
+  },
+  "features": [
+    {
+      "icon": "🛡️",
+      "title": "Güvenlik & Anti-Nuke",
+      "description": "Sunucunuzu bot saldırılarına ve yetkisiz hareketlere karşı 7/24 korur.",
+      "items": [
+        "Anti-Nuke Koruması",
+        "Anti-Link & Reklam Engeli",
+        "Anti-Küfür & Anti-Spam",
+        "Butonlu Doğrulama Paneli",
+        "Oto-Rol & Mod-Log"
+      ]
+    },
+    {
+      "icon": "🏆",
+      "title": "Seviye Sistemi",
+      "description": "MEE6 kalitesinde XP, rank kartları ve liderlik sıralaması ile üyelerinizi aktif tutun.",
+      "items": [
+        "Canvas Rank Kartı",
+        "Liderlik Sıralaması",
+        "Seviye Ödülleri",
+        "Resimli Hoş Geldin Kartı"
+      ]
+    },
+    {
+      "icon": "🎫",
+      "title": "Destek (Ticket) Sistemi",
+      "description": "Butonlu destek paneli ile düzenli ve takip edilebilir bir yardım sistemi kurun.",
+      "items": [
+        "Butonlu Destek Paneli",
+        "Özel Ticket Kanalları",
+        "Tek Tıkla Kapatma",
+        "Mod-Log Entegrasyonu"
+      ]
+    },
+    {
+      "icon": "🎭",
+      "title": "Buton Rol Panelleri",
+      "description": "Üyeleriniz tek tıkla diledikleri rolleri alıp bırakabilsin.",
+      "items": [
+        "5 Role Kadar Panel",
+        "Anında Rol Alma/Bırakma",
+        "Tamamen Özelleştirilebilir"
+      ]
+    },
+    {
+      "icon": "💰",
+      "title": "Ekonomi & Şans Oyunları",
+      "description": "Coin tabanlı ekonomi ile sunucunuza ayrı bir eğlence katmanı ekleyin.",
+      "items": [
+        "Cüzdan & Banka",
+        "Günlük Coin",
+        "Meslek Sistemi",
+        "Slot Makinesi & Yazı-Tura"
+      ]
+    },
+    {
+      "icon": "🎁",
+      "title": "Çekiliş Sistemi",
+      "description": "Süreli ve otomatik çekilişlerle topluluğunuzu ödüllendirin.",
+      "items": [
+        "Otomatik Kazanan Seçimi",
+        "Süre & Ödül Ayarı",
+        "Butonlu Katılım"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "category": "Güvenlik",
+      "name": "guvenlik",
+      "description": "Güvenlik korumalarını durum/listeler veya açar/kapatır"
+    },
+    {
+      "category": "Güvenlik",
+      "name": "dogrulama-kur",
+      "description": "Butonlu üye kayıt/doğrulama paneli kurar"
+    },
+    {
+      "category": "Güvenlik",
+      "name": "otorol",
+      "description": "Yeni üyelere otomatik verilecek rolü ayarlar"
+    },
+    {
+      "category": "Güvenlik",
+      "name": "modlog",
+      "description": "Denetim kayıtlarının gideceği kanalı ayarlar"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "ban",
+      "description": "Üyeyi sunucudan yasaklar"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "kick",
+      "description": "Üyeyi sunucudan atar"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "timeout",
+      "description": "Üyeyi belirli bir süre susturur"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "untimeout",
+      "description": "Üyenin susturmasını kaldırır"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "uyar",
+      "description": "Üyeye resmi uyarı verir ve siciline işler"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "sicil",
+      "description": "Üyenin ceza ve uyarı geçmişini gösterir"
+    },
+    {
+      "category": "Moderasyon",
+      "name": "temizle",
+      "description": "Kanaldaki mesajları topluca siler (1-100)"
+    },
+    {
+      "category": "Seviye",
+      "name": "rank",
+      "description": "Canvas rank kartını görüntüler"
+    },
+    {
+      "category": "Seviye",
+      "name": "liderlik",
+      "description": "Sunucu seviye sıralamasını gösterir"
+    },
+    {
+      "category": "Seviye",
+      "name": "seviye-odul",
+      "description": "Seviye rol ödüllerini yönetir"
+    },
+    {
+      "category": "Destek",
+      "name": "ticket-kur",
+      "description": "Butonlu destek bileti paneli oluşturur"
+    },
+    {
+      "category": "Roller",
+      "name": "rol-panel",
+      "description": "Butonlu rol alma paneli kurar"
+    },
+    {
+      "category": "Ekonomi",
+      "name": "bakiye",
+      "description": "Cüzdan ve banka bakiyesini gösterir"
+    },
+    {
+      "category": "Ekonomi",
+      "name": "gunluk",
+      "description": "24 saatlik hediye coin"
+    },
+    {
+      "category": "Ekonomi",
+      "name": "calis",
+      "description": "Bir işte çalışıp para kazanır"
+    },
+    {
+      "category": "Ekonomi",
+      "name": "kumar",
+      "description": "Slot makinesi veya Yazı-Tura oynar"
+    },
+    {
+      "category": "Ekonomi",
+      "name": "zenginler",
+      "description": "Sunucunun en zengin üyelerini listeler"
+    },
+    {
+      "category": "Araçlar",
+      "name": "cekilis",
+      "description": "Otomatik butonlu çekiliş başlatır"
+    },
+    {
+      "category": "Araçlar",
+      "name": "davet",
+      "description": "Botu başka sunuculara ekleme bağlantısını verir"
+    },
+    {
+      "category": "Araçlar",
+      "name": "botbilgi",
+      "description": "Botun canlı istatistiklerini ve sunucu sayısını gösterir"
+    },
+    {
+      "category": "Araçlar",
+      "name": "yardim",
+      "description": "Fotoğraflı & açılır menülü interaktif komut rehberi"
+    },
+    {
+      "category": "Araçlar",
+      "name": "ping",
+      "description": "Bot ve API gecikmesini gösterir"
+    },
+    {
+      "category": "Araçlar",
+      "name": "sunucu",
+      "description": "Sunucu istatistiklerini görüntüler"
+    },
+    {
+      "category": "Araçlar",
+      "name": "profil",
+      "description": "Üye profil kartını görüntüler"
+    },
+    {
+      "category": "Müzik",
+      "name": "cal",
+      "description": "Müzik çalmayı başlatır"
+    },
+    {
+      "category": "Müzik",
+      "name": "kuyruk",
+      "description": "Müzik kuyruğunu gösterir"
+    },
+    {
+      "category": "Müzik",
+      "name": "gec",
+      "description": "Sıradaki parçaya geçer"
+    },
+    {
+      "category": "Müzik",
+      "name": "durdur",
+      "description": "Müzik çalmayı durdurur"
+    }
+  ],
+  "installSteps": [
+    {
+      "icon": "🔑",
+      "title": "Discord Developer Portal",
+      "description": "Discord Developer Portal'da uygulamanızı oluşturun, bot tokeninizi ve Application ID'nizi alın. 3 Gateway Intent'in de açık olduğundan emin olun."
+    },
+    {
+      "icon": "🤖",
+      "title": "Botu Sunucunuza Davet Edin",
+      "description": "Sayfadaki 'Sunucuya Ekle' butonu ile botu sunucunuza ekleyin ve Administrator yetkisi verin."
+    },
+    {
+      "icon": "🚀",
+      "title": "Başlatın",
+      "description": "npm run deploy ile komutları yükleyin, ardından npm start ile botunuzu 7/24 çalıştırın."
+    }
+  ]
+}

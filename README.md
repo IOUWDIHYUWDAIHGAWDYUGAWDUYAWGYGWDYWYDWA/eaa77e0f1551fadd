@@ -4,6 +4,45 @@
 
 ---
 
+## 🌐 Web Sitesi (GitHub Pages)
+
+MEE6 tarzı tanıtım sitesi `web/` klasöründe bulunur ve **GitHub Actions** ile her push'ta otomatik olarak **GitHub Pages**'e yayınlanır.
+
+### Sitenin özellikleri
+* **Hero & Sunucuya Ekle** — OAuth davet butonu (Discord'a bot ekleme)
+* **Özellik kartları** — Güvenlik, seviye, ticket, roller, ekonomi, çekiliş
+* **Aranabilir komut tablosu** — 30+ slash komutu, kategori filtreli
+* **Kurulum adımları** — 3 adımda botu ayağa kaldırma
+
+### Siteyi yayınlama (tek seferlik)
+1. Repo → **Settings** → **Pages**
+2. **Build and deployment → Source** seçeneğini **"GitHub Actions"** yapın
+3. İlk push'tan sonra site otomatik yayınlanır
+
+> Site adresi: `https://<kullanici-adin>.github.io/<repo-adin>/`
+
+### Davet linkini ayarlama
+`web/assets/data.json` dosyasında:
+
+```json
+{
+  "clientId": "BOT_APPLICATION_ID_BURAYA",
+  "inviteUrl": ""
+}
+```
+
+* `clientId` girerseniz davet linki **otomatik oluşturulur** (permissions=8 Administrator).
+* Ya da `inviteUrl` alanına tam olarak kendi OAuth linkinizi yazabilirsiniz.
+
+### Yerel önizleme (isteğe bağlı)
+```bash
+cd web
+python -m http.server 8080
+# → http://localhost:8080
+```
+
+---
+
 ## 🌟 Öne Çıkan Özellikler
 
 ### 1. 🛡️ Güvenlik, Anti-Nuke & Auto-Mod
