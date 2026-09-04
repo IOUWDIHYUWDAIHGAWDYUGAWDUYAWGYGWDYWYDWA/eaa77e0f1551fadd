@@ -518,6 +518,7 @@ input:checked + .slider-switch:before {
   font-size: 34px;
   font-weight: 800;
   color: #fff;
+  letter-spacing: -0.5px;
   margin-bottom: 10px;
 }
 
