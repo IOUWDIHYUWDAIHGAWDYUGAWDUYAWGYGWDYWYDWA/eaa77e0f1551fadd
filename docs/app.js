@@ -1,11 +1,14 @@
-﻿/* ==========================================================================
-   vybot Cyber Cloud Dashboard - App Engine
+/* ==========================================================================
+   vybot Cyber Cloud Dashboard & Landing - App Engine
+   MEE6 Stili Gelişmiş Web Platformu
    ========================================================================== */
 
 const DISCORD_CLIENT_ID = '1545157265831759903';
+const BOT_KNOWN_GUILD_ID = '1536835757132751048'; // Botun halihazırda bulunduğu ana sunucu
 
-// Sunucu & Kullanıcı Durumu
+// Global Durum Nesnesi
 const state = {
+  currentView: 'landing', // 'landing' | 'server-select' | 'dashboard'
   token: localStorage.getItem('vybot_discord_token') || null,
   user: null,
   guilds: [],
@@ -27,20 +30,45 @@ const state = {
   }
 };
 
-// Demo Sunucu Verisi (Giriş yapılmadığında anında çalışan sunucu)
-const DEMO_SERVER = {
-  id: '1536835757132751048',
-  name: 'vybots Cyber HQ',
-  icon: null,
-  memberCount: 142,
-  rolesCount: 18,
-  channelsCount: 24,
-  botOnline: true
-};
+// Demo Sunucular (Giriş yapılmadığında veya önizleme için tüm durumları test etmeyi sağlar)
+const DEMO_SERVERS = [
+  {
+    id: '1536835757132751048',
+    name: 'vybots Cyber HQ',
+    icon: null,
+    memberCount: 142,
+    rolesCount: 18,
+    channelsCount: 24,
+    hasAdmin: true,
+    botInGuild: true
+  },
+  {
+    id: '998877665544332211',
+    name: 'Neon Gaming Community',
+    icon: null,
+    memberCount: 890,
+    rolesCount: 32,
+    channelsCount: 45,
+    hasAdmin: true,
+    botInGuild: false // Bot henüz eklenmemiş -> "Sunucuya Ekle" butonu çıkar
+  },
+  {
+    id: '112233445566778899',
+    name: 'Global Chill Topluluğu (Yetkisiz)',
+    icon: null,
+    memberCount: 4500,
+    rolesCount: 50,
+    channelsCount: 80,
+    hasAdmin: false, // Kullanıcının yönetici izni yok -> Kilitli, tıklayınca uyarı verir!
+    botInGuild: true
+  }
+];
 
 document.addEventListener('DOMContentLoaded', () => {
   initAuth();
+  initViewRouting();
   initTabs();
+  initGuildSearch();
   initSettingsListeners();
   initLiveRankCard();
   initMusicPlayer();
@@ -48,7 +76,48 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ==========================================================================
-   1. Discord OAuth2 Giriş ve Profil Yönetimi
+   1. Görünüm (View) Yönlendirme ve Sayfa Geçişleri
+   ========================================================================== */
+function showView(viewName) {
+  state.currentView = viewName;
+
+  const views = {
+    'landing': document.getElementById('view-landing'),
+    'server-select': document.getElementById('view-server-select'),
+    'dashboard': document.getElementById('view-dashboard')
+  };
+
+  // Tüm görünümleri pasif yap
+  Object.values(views).forEach(el => {
+    if (el) el.classList.remove('active');
+  });
+
+  // Hedef görünümü aktif et
+  if (views[viewName]) {
+    views[viewName].classList.add('active');
+  }
+
+  // Sayfayı en üste kaydır
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Eğer sunucu seçim ekranına geçildiyse ızgarayı yenile
+  if (viewName === 'server-select') {
+    renderGuildGrid();
+  } else if (viewName === 'dashboard') {
+    setTimeout(renderLiveRankCard, 100);
+  }
+}
+
+function initViewRouting() {
+  // Eğer kullanıcı daha önce giriş yapmışsa ve token varsa doğrudan sunucu seçimine yönlendirebilir veya tanıtımda kalabilir
+  const heroSelectBtn = document.getElementById('heroBtnSelectServer');
+  if (heroSelectBtn) {
+    heroSelectBtn.addEventListener('click', () => showView('server-select'));
+  }
+}
+
+/* ==========================================================================
+   2. Discord OAuth2 Giriş ve Profil Yönetimi
    ========================================================================== */
 function initAuth() {
   // URL Hash'ten Token Çıkar (#access_token=...)
@@ -61,112 +130,295 @@ function initAuth() {
       localStorage.setItem('vybot_discord_token', token);
       window.history.replaceState(null, null, window.location.pathname);
       showToast('🎉 Discord ile başarıyla giriş yapıldı!', 'success');
+      showView('server-select');
     }
   }
 
-  const authPill = document.getElementById('authPill');
-  const loginBtn = document.getElementById('loginBtn');
-  const serverSelectCol = document.getElementById('serverSelectCol');
-
-  // OAuth Giriş Linkini Ayarla
+  // OAuth Linklerini Yapılandır
   const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
   const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=identify%20guilds`;
-  if (loginBtn) loginBtn.href = authUrl;
 
-  const inviteBtn = document.getElementById('inviteBotBtn');
-  if (inviteBtn) {
-    inviteBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`;
-  }
+  ['loginBtn', 'landingLoginBtn', 'selectorLoginBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.href = authUrl;
+  });
+
+  // Bot Davet Linklerini Yapılandır
+  const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`;
+  ['inviteBotBtn', 'heroInviteBotBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.href = inviteUrl;
+  });
 
   if (state.token) {
     fetchDiscordData();
   } else {
-    // Demo Modunu Yükle
-    loadDemoMode();
+    // Demo Verilerini Yükle
+    loadDemoServers();
   }
 }
 
 async function fetchDiscordData() {
   try {
-    // 1. Kullanıcı Profilini Çek
+    // 1. Discord Kullanıcı Profilini Çek
     const userRes = await fetch('https://discord.com/api/v10/users/@me', {
       headers: { Authorization: `Bearer ${state.token}` }
     });
 
-    if (!userRes.ok) throw new Error('Token süresi dolmuş');
+    if (!userRes.ok) throw new Error('Oturum süresi dolmuş.');
     state.user = await userRes.json();
-    renderUserProfile(state.user);
+    renderUserProfiles(state.user);
 
-    // 2. Kullanıcının Sunucularını Çek
+    // 2. Kullanıcının Tüm Sunucularını Çek
     const guildsRes = await fetch('https://discord.com/api/v10/users/@me/guilds', {
       headers: { Authorization: `Bearer ${state.token}` }
     });
 
     if (guildsRes.ok) {
       const allGuilds = await guildsRes.json();
-      // Yalnızca Yönetici (0x8) veya Sunucuyu Yönet (0x20) yetkisi olanları filtrele
-      state.guilds = allGuilds.filter(g => (BigInt(g.permissions) & 0x8n) === 0x8n || (BigInt(g.permissions) & 0x20n) === 0x20n);
-      renderGuildList(state.guilds);
+
+      // Sunucuları analiz et: Yönetici (0x8) veya Sunucuyu Yönet (0x20) kontrolü
+      state.guilds = allGuilds.map(g => {
+        const perms = BigInt(g.permissions || '0');
+        const hasAdmin = (perms & 0x8n) === 0x8n || (perms & 0x20n) === 0x20n;
+        // Botun bu sunucuda olup olmadığını kontrol et
+        const botInGuild = g.id === BOT_KNOWN_GUILD_ID;
+
+        return {
+          id: g.id,
+          name: g.name,
+          icon: g.icon,
+          memberCount: g.approximate_member_count || 100,
+          rolesCount: 15,
+          channelsCount: 20,
+          hasAdmin: hasAdmin,
+          botInGuild: botInGuild
+        };
+      });
+
+      // Sunucuları sırala: Önce yönetici oldukları, sonra botun olduğu
+      state.guilds.sort((a, b) => {
+        if (a.hasAdmin && !b.hasAdmin) return -1;
+        if (!a.hasAdmin && b.hasAdmin) return 1;
+        return 0;
+      });
+
+      renderGuildGrid();
     }
   } catch (err) {
     console.warn('[OAuth]:', err.message);
     localStorage.removeItem('vybot_discord_token');
     state.token = null;
-    loadDemoMode();
+    loadDemoServers();
   }
 }
 
-function renderUserProfile(user) {
-  const authPill = document.getElementById('authPill');
-  const loginBtn = document.getElementById('loginBtn');
+function renderUserProfiles(user) {
+  const avatarUrl = user.avatar 
+    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+    : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-  if (loginBtn) loginBtn.style.display = 'none';
-  if (authPill) {
-    authPill.style.display = 'flex';
-    const avatarUrl = user.avatar 
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
-      : 'https://cdn.discordapp.com/embed/avatars/0.png';
+  const pillHtml = `
+    <div class="auth-avatar"><img src="${avatarUrl}" alt="${escapeHtml(user.username)}"></div>
+    <span class="auth-name">${escapeHtml(user.global_name || user.username)}</span>
+    <i class="fa-solid fa-arrow-right-from-bracket logout-icon" title="Çıkış Yap" onclick="logout()"></i>
+  `;
 
-    authPill.innerHTML = `
-      <div class="auth-avatar">
-        <img src="${avatarUrl}" alt="${user.username}">
+  ['authPill', 'landingAuthPill', 'selectorAuthPill'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = 'flex';
+      el.innerHTML = pillHtml;
+    }
+  });
+
+  ['loginBtn', 'landingLoginBtn', 'selectorLoginBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function loadDemoServers() {
+  state.guilds = DEMO_SERVERS;
+  state.selectedGuild = DEMO_SERVERS[0];
+  updateServerDisplay(DEMO_SERVERS[0]);
+  renderGuildGrid();
+}
+
+function logout() {
+  localStorage.removeItem('vybot_discord_token');
+  state.token = null;
+  state.user = null;
+
+  ['authPill', 'landingAuthPill', 'selectorAuthPill'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  ['loginBtn', 'landingLoginBtn', 'selectorLoginBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'inline-flex';
+  });
+
+  loadDemoServers();
+  showView('landing');
+  showToast('Oturum kapatıldı.', 'info');
+}
+
+/* ==========================================================================
+   3. Sunucu Seçim Ekranı ve İzin Kontrolü (CRITICAL USER REQUEST)
+   - Sadece yönetici izni varsa yönetilebilir.
+   - Bot sunucuda yoksa "Sunucuya Ekle" butonu gösterilir.
+   - Yönetici yetkisi yoksa direkt engellenir ve uyarı modalı açılır.
+   ========================================================================== */
+function renderGuildGrid(filterText = '') {
+  const grid = document.getElementById('guildGrid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  const list = state.guilds || DEMO_SERVERS;
+
+  const filtered = list.filter(g => 
+    g.name.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">
+        <i class="fa-solid fa-magnifying-glass" style="font-size: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+        <p>Aradığınız isimde bir sunucu bulunamadı.</p>
       </div>
-      <span class="auth-name">${user.global_name || user.username}</span>
-      <i class="fa-solid fa-arrow-right-from-bracket logout-icon" title="Çıkış Yap" onclick="logout()"></i>
     `;
+    return;
+  }
+
+  filtered.forEach(guild => {
+    const card = document.createElement('div');
+    card.className = `guild-select-card ${!guild.hasAdmin ? 'no-permission' : ''}`;
+
+    // Avatar
+    let avatarHtml = '';
+    if (guild.icon) {
+      avatarHtml = `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="${escapeHtml(guild.name)}">`;
+    } else {
+      const initials = guild.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      avatarHtml = initials;
+    }
+
+    // Durum Rozeti ve Aksiyon Butonu
+    let badgeHtml = '';
+    let actionBtnHtml = '';
+
+    if (!guild.hasAdmin) {
+      // ⛔ Yönetici Yetkisi YOK -> Kilitli
+      badgeHtml = `<span class="guild-badge-status denied"><i class="fa-solid fa-lock"></i> Yetkiniz Yok</span>`;
+      actionBtnHtml = `
+        <button class="btn-card-locked" onclick="showPermissionDeniedModal('${escapeHtml(guild.name)}'); event.stopPropagation();">
+          <i class="fa-solid fa-ban"></i> Erişim Kilitli
+        </button>
+      `;
+
+      // Kartın tamamına tıklanırsa da uyarı modalı ver
+      card.addEventListener('click', () => {
+        showPermissionDeniedModal(guild.name);
+      });
+    } else if (guild.botInGuild) {
+      // ✅ Yetkili ve Bot Sunucuda Var -> Paneli Aç
+      badgeHtml = `<span class="guild-badge-status active"><i class="fa-solid fa-check"></i> Bot Aktif</span>`;
+      actionBtnHtml = `
+        <button class="btn-card-manage" onclick="selectServer('${guild.id}'); event.stopPropagation();">
+          <i class="fa-solid fa-sliders"></i> Yönet
+        </button>
+      `;
+
+      card.addEventListener('click', () => {
+        selectServer(guild.id);
+      });
+    } else {
+      // ⚠️ Yetkili AMA Bot Sunucuda Yok -> Botu Ekle Butonu
+      const addBotUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`;
+      badgeHtml = `<span class="guild-badge-status not-added"><i class="fa-solid fa-circle-question"></i> Kurulmadı</span>`;
+      actionBtnHtml = `
+        <a href="${addBotUrl}" target="_blank" class="btn-card-add" onclick="event.stopPropagation();">
+          <i class="fa-solid fa-plus"></i> Sunucuya Ekle
+        </a>
+      `;
+
+      card.addEventListener('click', () => {
+        window.open(addBotUrl, '_blank');
+      });
+    }
+
+    card.innerHTML = `
+      <div class="guild-card-top">
+        <div class="guild-icon-large">${avatarHtml}</div>
+        <div class="guild-meta">
+          <div class="guild-card-name" title="${escapeHtml(guild.name)}">${escapeHtml(guild.name)}</div>
+          ${badgeHtml}
+        </div>
+      </div>
+      <div class="guild-card-action">
+        ${actionBtnHtml}
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+function initGuildSearch() {
+  const input = document.getElementById('guildSearchInput');
+  if (input) {
+    input.addEventListener('input', (e) => {
+      renderGuildGrid(e.target.value.trim());
+    });
   }
 }
 
-function renderGuildList(guilds) {
-  if (guilds.length > 0) {
-    state.selectedGuild = guilds[0];
-    updateServerDisplay(guilds[0]);
-  } else {
-    loadDemoMode();
+function selectServer(guildId) {
+  const guild = (state.guilds || DEMO_SERVERS).find(g => g.id === guildId);
+  if (!guild) return;
+
+  // İzin kontrolü
+  if (!guild.hasAdmin) {
+    showPermissionDeniedModal(guild.name);
+    return;
   }
-}
 
-function loadDemoMode() {
-  state.selectedGuild = DEMO_SERVER;
-  updateServerDisplay(DEMO_SERVER);
+  // Eğer bot sunucuda yoksa davet et
+  if (!guild.botInGuild) {
+    const addBotUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`;
+    window.open(addBotUrl, '_blank');
+    showToast('Bot kurulum penceresi açıldı. Botu ekledikten sonra sunucuyu yönetebilirsiniz.', 'info');
+    return;
+  }
 
-  const authPill = document.getElementById('authPill');
-  const loginBtn = document.getElementById('loginBtn');
-  if (loginBtn) loginBtn.style.display = 'flex';
-  if (authPill) authPill.style.display = 'none';
+  state.selectedGuild = guild;
+  updateServerDisplay(guild);
+  showView('dashboard');
+  showToast(`⚡ ${guild.name} yönetim paneline bağlandı!`, 'success');
 }
 
 function updateServerDisplay(guild) {
   const nameEl = document.getElementById('sidebarServerName');
   const avatarEl = document.getElementById('sidebarServerAvatar');
   const heroGuildName = document.getElementById('heroGuildName');
+  const breadcrumbServerName = document.getElementById('breadcrumbServerName');
+  const statMembersCount = document.getElementById('statMembersCount');
+  const statRolesCount = document.getElementById('statRolesCount');
+  const statChannelsCount = document.getElementById('statChannelsCount');
 
   if (nameEl) nameEl.textContent = guild.name;
   if (heroGuildName) heroGuildName.textContent = guild.name;
+  if (breadcrumbServerName) breadcrumbServerName.textContent = guild.name;
+
+  if (statMembersCount) statMembersCount.textContent = guild.memberCount || 142;
+  if (statRolesCount) statRolesCount.textContent = guild.rolesCount || 18;
+  if (statChannelsCount) statChannelsCount.textContent = guild.channelsCount || 24;
 
   if (avatarEl) {
     if (guild.icon) {
-      avatarEl.innerHTML = `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="${guild.name}">`;
+      avatarEl.innerHTML = `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="${escapeHtml(guild.name)}">`;
     } else {
       const initials = guild.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
       avatarEl.innerHTML = initials;
@@ -176,16 +428,42 @@ function updateServerDisplay(guild) {
   renderLiveRankCard();
 }
 
-function logout() {
-  localStorage.removeItem('vybot_discord_token');
-  state.token = null;
-  state.user = null;
-  loadDemoMode();
-  showToast('Oturum kapatıldı, Demo Moduna geçildi.', 'info');
+/* ==========================================================================
+   4. Yetkisiz Erişim Uyarı Modalı (Alert Modal)
+   ========================================================================== */
+function showPermissionDeniedModal(guildName = 'Bu sunucu') {
+  const modal = document.getElementById('alertModal');
+  const desc = document.getElementById('alertModalDesc');
+
+  if (desc) {
+    desc.innerHTML = `
+      <b>${escapeHtml(guildName)}</b> sunucusunu yönetmek için yeterli yetkiniz bulunmuyor.<br><br>
+      vybot kontrol paneline erişebilmek için bu sunucuda <b>Yönetici (Administrator)</b> veya <b>Sunucuyu Yönet (Manage Server)</b> iznine sahip olmanız gerekmektedir. Güvenlik politikası nedeniyle yetkisiz işlem engellenmiştir.
+    `;
+  }
+
+  if (modal) {
+    modal.classList.add('active');
+  }
 }
 
+function closeAlertModal() {
+  const modal = document.getElementById('alertModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// Modal dışına tıklandığında kapat
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('alertModal');
+  if (e.target === modal) {
+    closeAlertModal();
+  }
+});
+
 /* ==========================================================================
-   2. Sekme (Tab) Gezintisi
+   5. Dashboard Sekme Gezintisi (Sidebar Tabs)
    ========================================================================== */
 function initTabs() {
   const navItems = document.querySelectorAll('.nav-item[data-tab]');
@@ -209,14 +487,14 @@ function initTabs() {
       }
 
       if (targetTab === 'leveling') {
-        setTimeout(renderLiveRankCard, 50);
+        setTimeout(renderLiveRankCard, 60);
       }
     });
   });
 }
 
 /* ==========================================================================
-   3. Ayarlar & Auto-Save
+   6. Ayarlar & Auto-Save Listener'ları
    ========================================================================== */
 function initSettingsListeners() {
   // Toggle switches
@@ -262,7 +540,7 @@ function initSettingsListeners() {
 }
 
 /* ==========================================================================
-   4. MEE6 Canlı Rank Kartı Çizicisi (HTML5 Canvas)
+   7. MEE6 Canlı Rank Kartı Çizicisi (HTML5 Canvas)
    ========================================================================== */
 function initLiveRankCard() {
   const cardColorInput = document.getElementById('rankCardColor');
@@ -301,7 +579,7 @@ function renderLiveRankCard() {
   ctx.closePath();
   ctx.clip();
 
-  ctx.fillStyle = '#5865f2';
+  ctx.fillStyle = state.settings.rankColor || '#5865f2';
   ctx.fillRect(avX - avR, avY - avR, avR * 2, avR * 2);
 
   // Avatar Harfi
@@ -361,7 +639,7 @@ function renderLiveRankCard() {
 }
 
 /* ==========================================================================
-   5. Müzik Web Oynatıcı
+   8. Müzik Web Oynatıcı
    ========================================================================== */
 function initMusicPlayer() {
   const playBtn = document.getElementById('playerPlayBtn');
@@ -381,7 +659,7 @@ function initMusicPlayer() {
     addSongBtn.addEventListener('click', () => {
       const q = songInput.value.trim();
       if (q) {
-        showToast(`🎶 "${q}" müzik kuyruğuna eklendi!`, 'success');
+        showToast(`🎶 "${escapeHtml(q)}" müzik kuyruğuna eklendi!`, 'success');
         songInput.value = '';
       }
     });
@@ -389,7 +667,7 @@ function initMusicPlayer() {
 }
 
 /* ==========================================================================
-   6. Groq AI Canlı Test Konsolu
+   9. Groq AI Canlı Test Konsolu
    ========================================================================== */
 function initGroqAiTester() {
   const askBtn = document.getElementById('aiSendBtn');
@@ -431,7 +709,7 @@ function initGroqAiTester() {
 }
 
 /* ==========================================================================
-   Yardımcı Fonksiyonlar & Toast
+   10. Yardımcı Fonksiyonlar & Toast Bildirimleri
    ========================================================================== */
 function showToast(message, type = 'success') {
   let container = document.querySelector('.toast-container');
@@ -442,8 +720,8 @@ function showToast(message, type = 'success') {
   }
 
   const toast = document.createElement('div');
-  toast.className = 'toast';
-  const icon = type === 'success' ? 'fa-check' : 'fa-circle-info';
+  toast.className = `toast ${type === 'warning' ? 'warning' : ''}`;
+  const icon = type === 'success' ? 'fa-check' : (type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info');
   toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
   container.appendChild(toast);
 
@@ -456,6 +734,7 @@ function showToast(message, type = 'success') {
 }
 
 function escapeHtml(text) {
+  if (!text) return '';
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return String(text).replace(/[&<>"']/g, m => map[m]);
 }
