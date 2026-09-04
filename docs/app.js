@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGuildGrid();
   showView('landing');
   switchTab('plugins-home');
+  initLandingAnimations();
+  startDiscordDemo();
 });
 
 /* ==========================================================================
@@ -662,4 +664,176 @@ function escapeHtml(str) {
   if (!str) return '';
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return String(str).replace(/[&<>"']/g, m => map[m]);
+}
+
+/* ==========================================================================
+   11. Landing Animasyon Motoru (Scroll Reveal + 3D Tilt)
+   ========================================================================== */
+function initLandingAnimations() {
+  // 1) Scroll reveal (IntersectionObserver)
+  const revealEls = document.querySelectorAll('.reveal, .reveal-3d');
+  if (revealEls.length && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    revealEls.forEach(el => io.observe(el));
+  } else {
+    // Eski tarayıcı fallback: her şey görünür
+    revealEls.forEach(el => el.classList.add('visible'));
+  }
+
+  // 2) 3D tilt (yalnızca fare olan cihazlarda)
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const heroMockup = document.getElementById('heroMockup');
+    if (heroMockup) setupTilt(heroMockup, 8);
+
+    document.querySelectorAll('.feature-box').forEach(box => setupTilt(box, 6, true));
+    document.querySelectorAll('.command-cat').forEach(card => setupTilt(card, 5, true));
+    const discordWindow = document.querySelector('.discord-window');
+    if (discordWindow) setupTilt(discordWindow, 5);
+  }
+}
+
+function setupTilt(el, maxDeg, withGlare) {
+  if (!el) return;
+  el.classList.add('tilt-active');
+  el.style.position = el.style.position || 'relative';
+
+  if (withGlare) {
+    const glare = document.createElement('span');
+    glare.className = 'tilt-glare';
+    el.appendChild(glare);
+  }
+
+  el.addEventListener('mousemove', (e) => {
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    const rotY = (px - 0.5) * 2 * maxDeg;
+    const rotX = (0.5 - py) * 2 * maxDeg;
+
+    el.classList.remove('tilt-return');
+    el.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateY(-3px)`;
+
+    if (withGlare) {
+      el.style.setProperty('--glare-x', `${(px * 100).toFixed(1)}%`);
+      el.style.setProperty('--glare-y', `${(py * 100).toFixed(1)}%`);
+    }
+  });
+
+  el.addEventListener('mouseleave', () => {
+    el.classList.add('tilt-return');
+    el.style.transform = '';
+  });
+}
+
+/* ==========================================================================
+   12. Discord Canlı Sohbet Demo (animasyonlu mesaj akışı)
+   ========================================================================== */
+const discordDemoScript = [
+  {
+    user: 'Vynex', color: '#5865f2', avatarBg: 'linear-gradient(135deg, #5865f2, #eb459e)',
+    text: '<code>/rank</code>',
+    embed: { title: '🏆 Vynex • Rank Kartı', desc: 'Seviye 42 • Toplam 8,420 XP<br>Sıralama: <b>#1</b> • Bu hafta +1,240 XP', bar: 64 }
+  },
+  {
+    user: 'AyseK', color: '#23a55a', avatarBg: 'linear-gradient(135deg, #23a55a, #00b0f4)',
+    text: '<code>/çal Cyberpunk 2077 OST</code>',
+    embed: { title: '🎵 Şimdi Çalıyor', desc: '<b>Cyberpunk 2077 — I Really Want to Stay At Your House</b><br>Rosa Walton • 320kbps • Sesli kanal: 🎧 Looby FM', bar: 82 }
+  },
+  {
+    user: 'ModeratörAli', color: '#f0b232', avatarBg: 'linear-gradient(135deg, #f0b232, #ed4245)',
+    text: '<code>/guvenlik durum</code>',
+    embed: { title: '🛡️ Siber Kalkan Raporu', desc: 'Anti-Nuke: <b>Aktif</b> • Engellenen link: <b>14</b> • Spam susturma: <b>3</b><br>Son 24 saatte 0 ihlal.', bar: 100 }
+  },
+  {
+    user: 'YeniUye', color: '#eb459e', avatarBg: 'linear-gradient(135deg, #eb459e, #f0b232)',
+    text: 'Sunucuya yeni katıldım, rol nasıl alırım?',
+    embed: { title: '👋 Hoş Geldin!', desc: '<b>#rol-alma</b> panelinden oyun & bildirim rollerini tek tıkla seçebilirsin. İyi eğlenceler!', bar: 48 }
+  }
+];
+
+let discordDemoIndex = 0;
+let discordDemoTimer = null;
+
+function startDiscordDemo() {
+  const chatBox = document.getElementById('discordChatDemo');
+  const typing = document.getElementById('discordTyping');
+  const demoSection = document.getElementById('discord-demo');
+  if (!chatBox || !typing || !demoSection) return;
+
+  const postMessage = () => {
+    const msg = discordDemoScript[discordDemoIndex % discordDemoScript.length];
+    discordDemoIndex++;
+
+    const el = document.createElement('div');
+    el.className = 'dc-msg';
+    const now = new Date();
+    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const isBotEmbed = !!msg.embed;
+
+    el.innerHTML = `
+      <div class="dc-avatar" style="background: ${msg.avatarBg};">${escapeHtml(msg.user.charAt(0))}</div>
+      <div class="dc-body">
+        <div class="dc-head">
+          <span class="dc-name" style="color: ${msg.color};">${escapeHtml(msg.user)}</span>
+          <span class="dc-time">Bugün ${time}</span>
+        </div>
+        <div class="dc-text">${msg.text}</div>
+        ${isBotEmbed ? `
+        <div class="dc-embed">
+          <div class="dc-embed-title">${msg.embed.title}</div>
+          <div class="dc-embed-desc">${msg.embed.desc}</div>
+          <div class="dc-embed-bar"><div class="dc-embed-fill"></div></div>
+        </div>` : ''}
+      </div>`;
+
+    chatBox.appendChild(el);
+
+    // Embed progress bar animasyonu
+    if (isBotEmbed) {
+      setTimeout(() => {
+        const fill = el.querySelector('.dc-embed-fill');
+        if (fill) fill.style.width = msg.embed.bar + '%';
+      }, 350);
+    }
+
+    // En fazla 4 mesaj görünür kalsın
+    while (chatBox.children.length > 4) {
+      chatBox.removeChild(chatBox.firstChild);
+    }
+
+    // Kullanıcı mesajından sonra bot "yazıyor..." göstergesi
+    if (!isBotEmbed) {
+      typing.classList.add('show');
+      setTimeout(() => typing.classList.remove('show'), 1600);
+    }
+  };
+
+  const scheduleNext = (delay) => {
+    discordDemoTimer = setTimeout(() => {
+      postMessage();
+      scheduleNext(3400 + Math.random() * 1200);
+    }, delay);
+  };
+
+  // Demo yalnızca bölüm görünürken akar (performans)
+  const demoIO = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (!discordDemoTimer) scheduleNext(400);
+      } else if (discordDemoTimer) {
+        clearTimeout(discordDemoTimer);
+        discordDemoTimer = null;
+      }
+    });
+  }, { threshold: 0.2 });
+
+  demoIO.observe(demoSection);
 }

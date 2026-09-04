@@ -1640,3 +1640,340 @@ input:checked + .slider-switch:before {
   .landing-cta h2 { font-size: 26px; }
   .footer-bottom { justify-content: center; text-align: center; }
 }
+
+/* ==========================================================================
+   LANDING v4 — SCROLL REVEAL & 3D ANIMASYONLAR
+   ========================================================================== */
+
+/* Scroll reveal motoru */
+.reveal {
+  opacity: 0;
+  transform: translateY(34px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+.reveal.delay-1 { transition-delay: 0.08s; }
+.reveal.delay-2 { transition-delay: 0.16s; }
+.reveal.delay-3 { transition-delay: 0.24s; }
+.reveal.delay-4 { transition-delay: 0.32s; }
+.reveal.delay-5 { transition-delay: 0.4s; }
+
+/* 3D perspektifli giriş (mockup ve discord penceresi) */
+.reveal-3d {
+  opacity: 0;
+  transform: perspective(1200px) rotateX(14deg) translateY(56px) scale(0.96);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.reveal-3d.visible {
+  opacity: 1;
+  transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1);
+}
+
+/* Erişilebilirlik: hareket azaltma tercihi */
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-3d { transition: none !important; opacity: 1 !important; transform: none !important; }
+}
+
+/* 3D tilt etkileşimi (JS ile sürülür) */
+.tilt-active {
+  transition: transform 0.18s ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.tilt-active.tilt-return { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255, 255, 255, 0.09), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.tilt-active:hover .tilt-glare { opacity: 1; }
+
+/* Yüzen (float) rozet animasyonu */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.hero-pill-badge { animation: floatY 4s ease-in-out infinite; }
+.hero-pill-badge.reveal { animation: heroIn 0.7s 0.05s both, floatY 4s 0.9s ease-in-out infinite; }
+
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Yıldız parıltısı (canlı istatistik değerleri) */
+.hero-stat-item b { display: inline-block; }
+.hero-stat-item:hover b { animation: statPop 0.45s ease; }
+
+@keyframes statPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   DISCORD CANLI SOHBET DEMO
+   ========================================================================== */
+
+.landing-discord {
+  max-width: 1180px;
+  margin: 90px auto;
+  padding: 0 30px;
+}
+
+.discord-window {
+  max-width: 760px;
+  margin: 0 auto;
+  background: #313338;
+  border: 1px solid #1e1f22;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.discord-titlebar {
+  height: 44px;
+  background: #2b2d31;
+  border-bottom: 1px solid #1e1f22;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.discord-channel-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+
+.discord-channel-name i { font-size: 12px; color: #80848e; }
+
+.discord-online {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #23a55a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.discord-online i { font-size: 7px; }
+
+.discord-chat {
+  height: 340px;
+  overflow: hidden;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dc-msg {
+  display: flex;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: dcMsgIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes dcMsgIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dc-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+}
+
+.dc-body { min-width: 0; }
+
+.dc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+
+.dc-name { font-size: 14px; font-weight: 700; color: #f2f3f5; }
+
+.dc-bot-tag {
+  background: #5865f2;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.dc-time { font-size: 11px; color: #80848e; }
+
+.dc-text { font-size: 13.5px; color: #dbdee1; line-height: 1.45; }
+
+.dc-text code {
+  background: #2b2d31;
+  border: 1px solid #1e1f22;
+  color: #dbdee1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+}
+
+.dc-embed {
+  margin-top: 6px;
+  background: #2b2d31;
+  border-left: 4px solid var(--blurple);
+  border-radius: 6px;
+  padding: 10px 14px;
+  max-width: 460px;
+}
+
+.dc-embed-title { font-size: 13px; font-weight: 700; color: #f2f3f5; margin-bottom: 4px; }
+
+.dc-embed-desc { font-size: 12.5px; color: #b5bac1; line-height: 1.5; }
+
+.dc-embed-bar {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1e1f22;
+  overflow: hidden;
+}
+
+.dc-embed-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--blurple), #00b0f4);
+  width: 0;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.discord-inputbar {
+  background: #383a40;
+  margin: 0 16px 16px 16px;
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.discord-input-mock {
+  font-size: 13px;
+  color: #80848e;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discord-input-mock i { font-size: 15px; }
+
+.discord-typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.discord-typing.show { opacity: 1; }
+
+.discord-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #80848e;
+  animation: typingBounce 1.2s infinite;
+}
+
+.discord-typing span:nth-child(2) { animation-delay: 0.15s; }
+.discord-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ==========================================================================
+   KOMUT KATALOĞU
+   ========================================================================== */
+
+.landing-commands {
+  max-width: 1180px;
+  margin: 0 auto 90px auto;
+  padding: 0 30px;
+}
+
+.commands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.command-cat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.command-cat:hover {
+  transform: translateY(-4px);
+  border-color: rgba(88, 101, 242, 0.4);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.command-cat h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cmd-chips span {
+  background: rgba(88, 101, 242, 0.1);
+  border: 1px solid rgba(88, 101, 242, 0.22);
+  color: #c7d2fe;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  padding: 5px 11px;
+  border-radius: 16px;
+  transition: var(--transition);
+}
+
+.cmd-chips span:hover {
+  background: rgba(88, 101, 242, 0.22);
+  color: #fff;
+  transform: translateY(-2px);
+}
