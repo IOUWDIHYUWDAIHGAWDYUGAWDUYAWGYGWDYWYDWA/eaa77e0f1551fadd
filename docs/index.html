@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <!-- FontAwesome 6 Pro Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=1788538800660">
+  <link rel="stylesheet" href="style.css?v=1788539500000">
 <style>
 /* Inlined CSS to eliminate 100% of browser caching issues */
 .app-view { display: none !important; }
@@ -1335,6 +1335,325 @@ input:checked + .slider-switch:before {
   }
 }
 
+/* ==========================================================================
+   LANDING v3 — SADE & PROFESYONEL TASARIM KATMANI (MEE6 / Sapphire Stili)
+   ========================================================================== */
+
+/* Hero ızgara arkaplanı */
+.landing-hero { position: relative; }
+
+.hero-grid-bg {
+  position: absolute;
+  top: -90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 600px;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 40%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 40%, #000 0%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.landing-hero > *:not(.hero-grid-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+/* İstatistik şeridi */
+.hero-stats-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  padding: 18px 34px;
+  background: rgba(24, 26, 34, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  max-width: 740px;
+  margin: 0 auto;
+  backdrop-filter: blur(8px);
+}
+
+.hero-stat-item { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 110px; }
+.hero-stat-item b { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
+.hero-stat-item span { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+.hero-stat-sep { width: 1px; height: 30px; background: var(--border-medium); }
+
+/* Mockup v2 — tarayıcı penceresi */
+.hero-mockup-wrapper {
+  max-width: 980px;
+  margin: 0 auto;
+  background: #15171e;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.02), var(--glow-blurple);
+  overflow: hidden;
+  text-align: left;
+}
+
+.mockup-header-bar {
+  height: 46px;
+  background: #101218;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mockup-url-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mockup-url-pill i { font-size: 10px; color: var(--accent-green); }
+
+.mockup-live-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--accent-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mockup-live-badge i { font-size: 7px; animation: pulseDot 1.6s infinite; }
+
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.mockup-body { display: flex; min-height: 300px; }
+
+.mockup-sidebar {
+  width: 58px;
+  background: #101218;
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.mockup-sb-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--blurple), #7289da);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.mockup-sb-item {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.mockup-sb-item.active { background: rgba(88, 101, 242, 0.18); color: #a5b4fc; }
+.mockup-main { flex: 1; padding: 22px 26px; }
+
+.mockup-main-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+
+.mockup-guild-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2b2f3d, #3c4255);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mockup-guild-name { font-size: 14.5px; font-weight: 800; color: #fff; }
+.mockup-guild-sub { font-size: 11.5px; color: var(--accent-green); font-weight: 600; }
+.mockup-guild-sub i { font-size: 7px; }
+
+.mockup-main-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 18px; }
+
+.mockup-rank-card,
+.mockup-music-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mockup-avatar-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blurple), #eb459e);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mockup-rank-info { flex: 1; min-width: 0; }
+.mockup-username { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+
+.mockup-level-bar { height: 7px; background: #2b2f3d; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+
+.mockup-level-fill { width: 52%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--blurple), #00b0f4); }
+
+.mockup-level-labels { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; color: var(--text-dim); }
+.mockup-level-labels span:first-child { color: var(--accent-amber); }
+
+.mockup-music-disc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(87, 242, 135, 0.12);
+  color: var(--accent-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.mockup-music-info { flex: 1; min-width: 0; }
+.mockup-music-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mockup-music-progress { height: 5px; background: #2b2f3d; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+.mockup-music-fill { width: 78%; height: 100%; background: var(--accent-green); border-radius: 3px; }
+.mockup-music-times { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); font-weight: 600; }
+
+.mockup-music-ctrl {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  color: #0a0b0e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mockup-toggles { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.mockup-toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mockup-toggle { width: 30px; height: 17px; border-radius: 17px; background: #313338; position: relative; }
+.mockup-toggle.on { background: var(--accent-green); }
+
+.mockup-toggle::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: var(--transition);
+}
+
+/* CTA bandı */
+.landing-cta {
+  max-width: 1180px;
+  margin: 0 auto 90px auto;
+  padding: 56px 30px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.12), rgba(0, 176, 244, 0.07));
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  border-radius: var(--radius-xl);
+}
+
+.landing-cta h2 { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.6px; margin-bottom: 12px; }
+
+.landing-cta p { font-size: 15.5px; color: var(--text-muted); line-height: 1.6; max-width: 560px; margin: 0 auto 30px auto; }
+
+.cta-buttons { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+/* Footer */
+.landing-footer { border-top: 1px solid var(--border-subtle); padding: 44px 40px 30px 40px; max-width: 1180px; margin: 0 auto; }
+
+.footer-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.footer-brand .brand-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+.footer-name { font-weight: 800; color: #fff; font-size: 15.5px; }
+.footer-tag { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13.5px; font-weight: 600; transition: var(--transition); }
+.footer-links a:hover { color: #fff; }
+.footer-links a i { color: var(--blurple); margin-right: 4px; font-size: 12px; }
+
+.footer-bottom {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.footer-status { color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+.footer-status i { font-size: 7px; }
+
+/* Landing responsive */
+@media (max-width: 900px) {
+  .landing-hero h1 { font-size: 38px; }
+  .hero-stats-strip { gap: 18px; padding: 16px 20px; }
+  .hero-stat-item { min-width: 90px; }
+  .hero-stat-sep { display: none; }
+}
+
+@media (max-width: 760px) {
+  .mockup-main-grid { grid-template-columns: 1fr; }
+  .mockup-sidebar { display: none; }
+  .landing-cta h2 { font-size: 26px; }
+  .footer-bottom { justify-content: center; text-align: center; }
+}
 </style>
 </head>
 <body>
@@ -1378,8 +1697,9 @@ input:checked + .slider-switch:before {
 
     <!-- Hero Bölümü -->
     <section class="landing-hero">
+      <div class="hero-grid-bg"></div>
       <div class="hero-pill-badge">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> MEE6 & ProBot Özellikleriyle Donatılmış Yeni Nesil Bot
+        <i class="fa-solid fa-bolt"></i> MEE6 & ProBot Seviyesinde Yeni Nesil Discord Botu
       </div>
 
       <h1>
@@ -1400,61 +1720,72 @@ input:checked + .slider-switch:before {
         </a>
       </div>
 
+      <div class="hero-stats-strip">
+        <div class="hero-stat-item"><b>7/24</b><span>Kesintisiz Çalışma</span></div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat-item"><b>%99.9</b><span>Sunucu Durumu</span></div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat-item"><b>320kbps</b><span>Müzik Kalitesi</span></div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat-item"><b>6+</b><span>Profesyonel Modül</span></div>
+      </div>
+
       <!-- Hero Canlı Arayüz Önizleme Kartı (Mockup) -->
       <div class="hero-mockup-wrapper">
         <div class="mockup-header-bar">
           <div class="mockup-dots">
             <span></span><span></span><span></span>
           </div>
-          <span style="font-size: 12.5px; font-weight: 600; color: var(--text-muted);">vybot Cloud v2.0 - Sunucu Kontrol Merkezi</span>
-          <span class="badge-tag badge-green"><i class="fa-solid fa-circle" style="font-size: 8px;"></i> 7/24 Kesintisiz</span>
+          <div class="mockup-url-pill"><i class="fa-solid fa-lock"></i> app.vybot.gg/dashboard</div>
+          <span class="mockup-live-badge"><i class="fa-solid fa-circle"></i> CANLI</span>
         </div>
 
-        <div class="mockup-grid">
-          <!-- Mini Kart 1: MEE6 Seviye -->
-          <div class="mockup-mini-card">
-            <h4>
-              <span><i class="fa-solid fa-trophy" style="color: var(--accent-amber);"></i> Seviye & XP</span>
-              <span class="badge-tag badge-blurple">MEE6 Motoru</span>
-            </h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Özelleştirilebilir Canvas rank kartı ve liderlik tablosu.</p>
-            <div style="background: #111318; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
-              <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--blurple); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px;">V</div>
-              <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                  <span style="font-weight: 700; color: #fff;">Vynex</span>
-                  <span style="color: var(--accent-amber); font-weight: 700;">SEVİYE 42</span>
-                </div>
-                <div style="height: 6px; background: #2b2f3d; border-radius: 3px; overflow: hidden;">
-                  <div style="width: 70%; height: 100%; background: var(--blurple);"></div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-sb-logo">V</div>
+            <div class="mockup-sb-item active"><i class="fa-solid fa-house"></i></div>
+            <div class="mockup-sb-item"><i class="fa-solid fa-chart-simple"></i></div>
+            <div class="mockup-sb-item"><i class="fa-solid fa-music"></i></div>
+            <div class="mockup-sb-item"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="mockup-sb-spacer"></div>
+            <div class="mockup-sb-item"><i class="fa-solid fa-gear"></i></div>
+          </div>
+
+          <div class="mockup-main">
+            <div class="mockup-main-head">
+              <div class="mockup-guild-avatar">V</div>
+              <div>
+                <div class="mockup-guild-name">vybots Cyber HQ</div>
+                <div class="mockup-guild-sub"><i class="fa-solid fa-circle"></i> Bot Aktif &bull; 142 üye</div>
+              </div>
+              <span class="badge-tag badge-green" style="margin-left: auto;">YÖNET</span>
+            </div>
+
+            <div class="mockup-main-grid">
+              <div class="mockup-rank-card">
+                <div class="mockup-avatar-lg">V</div>
+                <div class="mockup-rank-info">
+                  <div class="mockup-username">Vynex</div>
+                  <div class="mockup-level-bar"><div class="mockup-level-fill"></div></div>
+                  <div class="mockup-level-labels"><span>SEVİYE 42</span><span>4,150 / 8,000 XP</span></div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Mini Kart 2: 1:1 Müzik -->
-          <div class="mockup-mini-card">
-            <h4>
-              <span><i class="fa-solid fa-music" style="color: var(--accent-green);"></i> 1:1 Stüdyo Müzik</span>
-              <span class="badge-tag badge-green">320kbps</span>
-            </h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">YouTube & Spotify üzerinden sıfır gecikmeli orijinal akış.</p>
-            <div style="background: #111318; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 12px; font-weight: 600; color: #fff;"><i class="fa-solid fa-play" style="color: var(--accent-green); margin-right: 6px;"></i> Cyberpunk 2077 OST</span>
-              <span style="font-size: 11px; color: var(--text-dim);">3:45 / 4:06</span>
+              <div class="mockup-music-card">
+                <div class="mockup-music-disc"><i class="fa-solid fa-music"></i></div>
+                <div class="mockup-music-info">
+                  <div class="mockup-music-title">Cyberpunk 2077 OST</div>
+                  <div class="mockup-music-progress"><div class="mockup-music-fill"></div></div>
+                  <div class="mockup-music-times"><span>3:45</span><span>4:06</span></div>
+                </div>
+                <div class="mockup-music-ctrl"><i class="fa-solid fa-pause"></i></div>
+              </div>
             </div>
-          </div>
 
-          <!-- Mini Kart 3: Güvenlik & Oto-Mod -->
-          <div class="mockup-mini-card">
-            <h4>
-              <span><i class="fa-solid fa-shield-halved" style="color: var(--accent-red);"></i> Oto-Mod Kalkanı</span>
-              <span class="badge-tag badge-red">Aktif</span>
-            </h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Anti-Nuke, Anti-Link, Küfür ve Spam engelleme.</p>
-            <div style="background: #111318; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 12px; color: var(--text-muted);">Engellenen Tehdit:</span>
-              <span style="font-size: 12px; font-weight: 700; color: var(--accent-green);">0 İhlal</span>
+            <div class="mockup-toggles">
+              <span class="mockup-toggle-chip"><i class="fa-solid fa-trophy" style="color: var(--accent-amber);"></i> Seviye &amp; XP <span class="mockup-toggle on"></span></span>
+              <span class="mockup-toggle-chip"><i class="fa-solid fa-music" style="color: var(--accent-green);"></i> Müzik <span class="mockup-toggle on"></span></span>
+              <span class="mockup-toggle-chip"><i class="fa-solid fa-shield-halved" style="color: var(--accent-red);"></i> Oto-Mod <span class="mockup-toggle on"></span></span>
             </div>
           </div>
         </div>
@@ -1525,17 +1856,37 @@ input:checked + .slider-switch:before {
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer style="border-top: 1px solid var(--border-subtle); padding: 40px; text-align: center; color: var(--text-dim); font-size: 13.5px;">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;">
-        <div class="brand-icon" style="width: 30px; height: 30px; font-size: 14px;">V</div>
-        <span style="font-weight: 800; color: #fff; font-size: 16px;">vybot Cyber Cloud</span>
+    <!-- CTA Bandı -->
+    <section class="landing-cta">
+      <h2>Sunucunu Bugün vybot'a Teslim Et</h2>
+      <p>Kurulum 60 saniyeden kısa sürer. Seviye sistemi, müzik, güvenlik ve akıllı asistan — hepsi tek botta, ücretsiz.</p>
+      <div class="cta-buttons">
+        <a href="https://discord.com/api/oauth2/authorize?client_id=1545157265831759903&permissions=8&scope=bot%20applications.commands" target="_blank" class="btn btn-blurple btn-hero-main">
+          <i class="fa-brands fa-discord"></i> vybot'u Sunucuna Ekle
+        </a>
+        <button class="btn btn-secondary btn-hero-main" onclick="showView('server-select')">
+          <i class="fa-solid fa-sliders"></i> Paneli Görüntüle
+        </button>
       </div>
-      <p style="margin-bottom: 16px;">Tüm hakları saklıdır &copy; 2026 vybot Project. GitHub Pages üzerinden kesintisiz yayınlanmaktadır.</p>
-      <div style="display: flex; justify-content: center; gap: 20px;">
-        <a href="#" onclick="showView('server-select'); return false;" style="color: var(--blurple); text-decoration: none; font-weight: 600;">Sunucularım</a>
-        <a href="#" onclick="showLeaderboardDemo(); return false;" style="color: var(--text-muted); text-decoration: none;">Liderlik Tablosu</a>
-        <a href="https://discord.com/api/oauth2/authorize?client_id=1545157265831759903&permissions=8&scope=bot%20applications.commands" target="_blank" style="color: var(--text-muted); text-decoration: none;">Botu Davet Et</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="footer-brand">
+        <div class="brand-icon">V</div>
+        <div>
+          <div class="footer-name">vybot Cyber Cloud</div>
+          <div class="footer-tag">Discord sunucuları için yeni nesil yönetim platformu</div>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="#" onclick="showView('server-select'); return false;"><i class="fa-solid fa-server"></i> Sunucularım</a>
+        <a href="#" onclick="showLeaderboardDemo(); return false;"><i class="fa-solid fa-trophy"></i> Liderlik Tablosu</a>
+        <a href="https://discord.com/api/oauth2/authorize?client_id=1545157265831759903&permissions=8&scope=bot%20applications.commands" target="_blank"><i class="fa-brands fa-discord"></i> Botu Davet Et</a>
+      </div>
+      <div class="footer-bottom">
+        <span>Tüm hakları saklıdır &copy; 2026 vybot Project. GitHub Pages üzerinden yayınlanmaktadır.</span>
+        <span class="footer-status"><i class="fa-solid fa-circle"></i> Tüm sistemler çalışıyor</span>
       </div>
     </footer>
   </div>
