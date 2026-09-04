@@ -12,3 +12,6 @@ Thumbs.db
 # Açık Kaynakta Gizlenen Dizinler (Sadece bundle.enc içinde şifreli saklanır)
 src/
 runner.js
+cookies.txt
+yt-dlp*
+Yeni klasör/

@@ -24,10 +24,13 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: 🎵 yt-dlp Kur
+      - name: 🎵 yt-dlp & FFmpeg Kur
         run: |
           sudo wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
+          which ffmpeg || sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          yt-dlp --version
+          ffmpeg -version | head -n 1
 
       - name: 📦 Bağımlılıkları Yükle (npm install)
         run: npm install --prefer-offline --no-audit --no-fund

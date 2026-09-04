@@ -36,6 +36,10 @@ if (fs.existsSync(path.join(__dirname, 'runner.js'))) {
     allFilesToEncrypt.push(path.join(__dirname, 'runner.js'));
 }
 
+if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
+    allFilesToEncrypt.push(path.join(__dirname, 'cookies.txt'));
+}
+
 console.log(`📦 Toplam ${allFilesToEncrypt.length} dosya şifreleniyor...`);
 
 const archive = {};
