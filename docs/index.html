@@ -2746,6 +2746,92 @@ input:checked + .slider-switch:before {
                 </tbody>
               </table>
             </div>
+
+            <!-- Liderlik Tablosu Ayarları -->
+            <div class="settings-block" style="margin-top: 24px;" data-settings="leaderboard">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-sliders"></i> Liderlik Tablosu Ayarları</h3>
+                <span class="badge-tag badge-green">Canlı</span>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Sıralama Dönemi</h4>
+                  <p>Tablonun hangi zaman aralığına göre sıralanacağı.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="period" onchange="renderLeaderboard()">
+                  <option value="all" selected>Tüm Zamanlar</option>
+                  <option value="week">Bu Hafta</option>
+                  <option value="month">Bu Ay</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Görüntülenecek Üye Sayısı</h4>
+                  <p>Tabloda listelenecek maksimum üye sayısı.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="topN" onchange="renderLeaderboard()">
+                  <option value="10" selected>Top 10</option>
+                  <option value="25">Top 25</option>
+                  <option value="50">Top 50</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>XP Çubuklarını Göster</h4>
+                  <p>Tablodaki XP ilerleme çubuklarının görünürlüğü.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked data-set="showXp" onchange="renderLeaderboard()">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Seviye Atlama Duyuru Kanalı</h4>
+                  <p>Bir üye seviye atladığında tebrik mesajı bu kanala düşer.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="announceChannel">
+                  <option selected># 🏆・seviye-atlama</option>
+                  <option># 📢・duyurular</option>
+                  <option># 💬・genel-sohbet</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Seviye Rol Ödülleri</h4>
+                  <p>Her 10 seviyede üyeye otomatik özel rol verilir.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked data-set="roleRewards">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Anonim Mod</h4>
+                  <p>Tabloda kullanıcı adları yerine takma adlar gösterilir.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" data-set="anonymous" onchange="renderLeaderboard()">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('leaderboard')">
+                  <i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="resetPanelSettings('leaderboard')" style="border-color: var(--accent-red); color: var(--accent-red);">
+                  <i class="fa-solid fa-rotate-left"></i> Varsayılana Dön
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- ==========================================================
@@ -3129,8 +3215,62 @@ input:checked + .slider-switch:before {
                 <p>Üyelerin tek tıkla kendi rollerini seçmesini sağlayan butonlu veya emojili mesajlar oluşturun.</p>
               </div>
             </div>
-            <div class="settings-block">
-              <p style="color: var(--text-muted); font-size: 14px;">Sunucunuz için henüz bir tepki rolü mesajı oluşturulmadı. Yeni bir mesaj oluşturmak için kanal seçin.</p>
+            <div class="settings-block" data-settings="reaction-roles">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-tags"></i> Rol Paneli Oluştur</h3>
+                <span class="badge-tag badge-blurple">Kurulum</span>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Panel Kanalı</h4>
+                  <p>Rol seçim mesajının gönderileceği kanal.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="channel">
+                  <option selected># 🎭・rol-alma</option>
+                  <option># 📢・duyurular</option>
+                  <option># 💬・genel-sohbet</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Panel Başlığı</h4>
+                  <p>Üyelerin göreceği gömülü mesaj başlığı.</p>
+                </div>
+                <input type="text" class="discord-input" value="🎭 Kendi Rolünü Seç" style="width: 220px;" data-set="title">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Butonlu Panel</h4>
+                  <p>Emoji tepkisi yerine butonlu seçim menüsü kullanılır.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked data-set="buttons">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Tek Seçim Modu</h4>
+                  <p>Üye aynı anda yalnızca bir rol alabilsin (diğerleri otomatik düşer).</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" data-set="singleMode">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('reaction-roles')">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Paneli Oluştur & Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="resetPanelSettings('reaction-roles')" style="border-color: var(--accent-red); color: var(--accent-red);">
+                  <i class="fa-solid fa-rotate-left"></i> Varsayılana Dön
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3141,13 +3281,63 @@ input:checked + .slider-switch:before {
                 <p>Kullanıcıların günlük ödül almasını, oyunlar oynamasını ve liderlikte yarışmasını sağlayın.</p>
               </div>
             </div>
-            <div class="settings-block">
+            <div class="settings-block" data-settings="economy">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-coins"></i> Ekonomi Ayarları</h3>
+                <span class="badge-tag badge-green">Aktif</span>
+              </div>
+
               <div class="setting-item-row">
                 <div class="setting-label-col">
                   <h4>Günlük Hediye Para (Daily)</h4>
                   <p>24 saatte bir alınabilecek varsayılan kredi.</p>
                 </div>
-                <input type="number" class="discord-input" value="250" style="width: 120px;">
+                <input type="number" class="discord-input" value="250" style="width: 120px;" data-set="daily">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Çalışma Maaşı (/çalış)</h4>
+                  <p>Bir çalışma komutundan kazanılacak temel ücret.</p>
+                </div>
+                <input type="number" class="discord-input" value="120" style="width: 120px;" data-set="salary">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Maksimum Kumar Bahisi</h4>
+                  <p>Tek elde yatırılabilecek en yüksek kredi miktarı.</p>
+                </div>
+                <input type="number" class="discord-input" value="5000" style="width: 120px;" data-set="maxBet">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Ekonomi Kanalı</h4>
+                  <p>Ekonomi komutlarının kullanılacağı kanal kısıtlaması.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="channel">
+                  <option selected># 💰・ekonomi</option>
+                  <option># 💬・genel-sohbet</option>
+                  <option value="">Tüm Kanallar</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Para Birimi Simgesi</h4>
+                  <p>Bakiye gösterimlerinde kullanılacak sembol.</p>
+                </div>
+                <input type="text" class="discord-input" value="🪙" style="width: 120px;" data-set="symbol">
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('economy')">
+                  <i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="resetPanelSettings('economy')" style="border-color: var(--accent-red); color: var(--accent-red);">
+                  <i class="fa-solid fa-rotate-left"></i> Varsayılana Dön
+                </button>
               </div>
             </div>
           </div>
@@ -3159,16 +3349,69 @@ input:checked + .slider-switch:before {
                 <p>Kullanıcıların özel destek kanalı açabilmesi için butonlu yardım paneli kurun.</p>
               </div>
             </div>
-            <div class="settings-block">
+            <div class="settings-block" data-settings="tickets">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-ticket"></i> Ticket Sistem Ayarları</h3>
+                <span class="badge-tag badge-green">Aktif</span>
+              </div>
+
               <div class="setting-item-row">
                 <div class="setting-label-col">
                   <h4>Destek Yetkili Rolü</h4>
                   <p>Açılan destek taleplerini görmeye yetkili rol.</p>
                 </div>
-                <select class="discord-select" style="width: 220px;">
+                <select class="discord-select" style="width: 220px;" data-set="staffRole">
                   <option selected>@ Moderatör</option>
                   <option>@ Destek Ekibi</option>
+                  <option>@ Yönetici</option>
                 </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Panel Kanalı</h4>
+                  <p>Ticket açma butonunun yayınlanacağı kanal.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="panelChannel">
+                  <option selected># 🎫・destek-panel</option>
+                  <option># 📢・duyurular</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Kişi Başı Maksimum Ticket</h4>
+                  <p>Bir üyenin aynı anda açık tutabileceği talep sayısı.</p>
+                </div>
+                <input type="number" class="discord-input" value="1" min="1" max="5" style="width: 120px;" data-set="maxPerUser">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Kayıt (Transcript)</h4>
+                  <p>Kapatılan ticketların sohbet kaydı otomatik oluşturulsun.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked data-set="transcript">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Karşılama Mesajı</h4>
+                  <p>Ticket açıldığında kullanıcıya gönderilecek ilk mesaj.</p>
+                </div>
+                <input type="text" class="discord-input" value="Merhaba! Sorununuzu yazın, en kısa sürede dönüyoruz. 🎫" style="width: 320px;" data-set="welcomeMsg">
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('tickets')">
+                  <i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="resetPanelSettings('tickets')" style="border-color: var(--accent-red); color: var(--accent-red);">
+                  <i class="fa-solid fa-rotate-left"></i> Varsayılana Dön
+                </button>
               </div>
             </div>
           </div>
@@ -3180,10 +3423,66 @@ input:checked + .slider-switch:before {
                 <p>Sunucunuzda otomatik, şeffaf ve sayaçlı hediye çekilişleri düzenleyin.</p>
               </div>
             </div>
-            <div class="settings-block">
-              <button class="btn btn-blurple" onclick="showToast('Yeni çekiliş sihirbazı hazır!', 'success')">
-                <i class="fa-solid fa-plus"></i> Yeni Çekiliş Başlat
-              </button>
+            <div class="settings-block" data-settings="giveaways">
+              <div class="block-title-row">
+                <h3><i class="fa-solid fa-gear"></i> Çekiliş Varsayılanları</h3>
+                <span class="badge-tag badge-blurple">Konfigürasyon</span>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Varsayılan Çekiliş Kanalı</h4>
+                  <p>Çekiliş duyurularının otomatik yayınlanacağı kanal.</p>
+                </div>
+                <select class="discord-select" style="width: 220px;" data-set="channel">
+                  <option selected># 🎁・çekiliş</option>
+                  <option># 📢・duyurular</option>
+                </select>
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Varsayılan Kazanan Sayısı</h4>
+                  <p>Belirtilmezse çekilişleri kaç kişi kazanır.</p>
+                </div>
+                <input type="number" class="discord-input" value="1" min="1" max="20" style="width: 120px;" data-set="winners">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Minimum Süre (Saat)</h4>
+                  <p>Bir çekilişin sürebileceği en kısa süre.</p>
+                </div>
+                <input type="number" class="discord-input" value="24" min="1" style="width: 120px;" data-set="minHours">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>Gerekli Minimum Seviye</h4>
+                  <p>Bu seviyenin altındaki üyeler çekilişe katılamaz (0 = kapalı).</p>
+                </div>
+                <input type="number" class="discord-input" value="0" min="0" style="width: 120px;" data-set="minLevel">
+              </div>
+
+              <div class="setting-item-row">
+                <div class="setting-label-col">
+                  <h4>DM Bildirimi</h4>
+                  <p>Kazananlara özel mesaj ile de haber verilir.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked data-set="dmNotify">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="savePanelSettings('giveaways')">
+                  <i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet
+                </button>
+                <button class="btn btn-secondary" onclick="showToast('Yeni çekiliş sihirbazı hazır!', 'success')">
+                  <i class="fa-solid fa-plus"></i> Yeni Çekiliş Başlat
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3212,6 +3511,6 @@ input:checked + .slider-switch:before {
   <!-- Toast Bildirim Yığını -->
   <div class="toast-stack" id="toastStack"></div>
 
-  <script src="app.js?v=1788553000000"></script>
+  <script src="app.js?v=1788562000000"></script>
 </body>
 </html>

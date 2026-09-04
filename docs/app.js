@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   switchTab('plugins-home');
   initLandingAnimations();
   startDiscordDemo();
+  loadPanelSettings();
 });
 
 /* ==========================================================================
@@ -836,4 +837,142 @@ function startDiscordDemo() {
   }, { threshold: 0.2 });
 
   demoIO.observe(demoSection);
+}
+
+/* ==========================================================================
+   13. Panel Ayar Yöneticisi (sunucu bazlı localStorage kalıcılığı)
+   ========================================================================== */
+function getPanelScope(mod) {
+  const guildName = state.selectedGuild ? state.selectedGuild.name : 'default';
+  return `vybot_panel_${guildName}_${mod}`;
+}
+
+function savePanelSettings(mod) {
+  const block = document.querySelector(`[data-settings="${mod}"]`);
+  if (!block) return;
+
+  const data = {};
+  block.querySelectorAll('[data-set]').forEach(inp => {
+    data[inp.dataset.set] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+
+  try {
+    localStorage.setItem(getPanelScope(mod), JSON.stringify(data));
+  } catch (e) { /* localStorage kapalı olabilir */ }
+
+  showToast('Ayarlar kaydedildi ve bot ile senkronize edildi!', 'success');
+  if (mod === 'leaderboard') renderLeaderboard();
+}
+
+function resetPanelSettings(mod) {
+  try {
+    localStorage.removeItem(getPanelScope(mod));
+  } catch (e) { /* yoksay */ }
+
+  const block = document.querySelector(`[data-settings="${mod}"]`);
+  if (block) {
+    block.querySelectorAll('select[data-set]').forEach(sel => { sel.selectedIndex = 0; });
+    block.querySelectorAll('input[type="text"][data-set], input[type="number"][data-set]').forEach(inp => {
+      inp.value = inp.defaultValue;
+    });
+    block.querySelectorAll('input[type="checkbox"][data-set]').forEach(inp => {
+      inp.checked = inp.defaultChecked;
+    });
+  }
+
+  showToast('Ayarlar varsayılan değerlere döndürüldü.', 'info');
+  if (mod === 'leaderboard') renderLeaderboard();
+}
+
+function loadPanelSettings() {
+  document.querySelectorAll('[data-settings]').forEach(block => {
+    const mod = block.dataset.settings;
+    let data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(getPanelScope(mod)));
+    } catch (e) { return; }
+    if (!data) return;
+
+    block.querySelectorAll('[data-set]').forEach(inp => {
+      if (!(inp.dataset.set in data)) return;
+      if (inp.type === 'checkbox') inp.checked = !!data[inp.dataset.set];
+      else inp.value = data[inp.dataset.set];
+    });
+  });
+
+  renderLeaderboard();
+}
+
+/* ==========================================================================
+   14. Dinamik Liderlik Tablosu (panel ayarlarına gerçek zamanlı tepki verir)
+   ========================================================================== */
+const leaderboardDemoData = [
+  { name: 'Vynex', tag: '#0001', initial: 'V', level: 42, msg: 5840, xp: 48250, xpMax: 50000 },
+  { name: 'Moderatör Ali', tag: '#1234', initial: 'M', level: 38, msg: 4120, xp: 38100, xpMax: 42000 },
+  { name: 'EfeGamer', tag: '#5678', initial: 'E', level: 31, msg: 3050, xp: 28400, xpMax: 32000 },
+  { name: 'KorkusuzSavaşçı', tag: '#9012', initial: 'K', level: 27, msg: 2410, xp: 21000, xpMax: 26000 },
+  { name: 'ZeynepDev', tag: '#3456', initial: 'Z', level: 24, msg: 2100, xp: 18400, xpMax: 22000 },
+  { name: 'PixelAvcısı', tag: '#7890', initial: 'P', level: 21, msg: 1780, xp: 15200, xpMax: 19000 },
+  { name: 'GölgeNinja', tag: '#2345', initial: 'G', level: 18, msg: 1420, xp: 12100, xpMax: 15000 },
+  { name: 'AyseK', tag: '#6789', initial: 'A', level: 15, msg: 1100, xp: 9400, xpMax: 12000 },
+  { name: 'MertBaykus', tag: '#0123', initial: 'M', level: 12, msg: 860, xp: 7100, xpMax: 9500 },
+  { name: 'NovaStar', tag: '#4567', initial: 'N', level: 9, msg: 620, xp: 4800, xpMax: 7000 }
+];
+
+const rankColors = ['#f0b232', '#cbd5e1', '#cd7f32'];
+const rankBadge = ['badge-yellow', 'badge-blurple', 'badge-blurple'];
+
+function renderLeaderboard() {
+  const tbody = document.getElementById('leaderboardTbody');
+  if (!tbody) return;
+
+  const block = document.querySelector('[data-settings="leaderboard"]');
+  const getVal = (key, def) => {
+    const el = block ? block.querySelector(`[data-set="${key}"]`) : null;
+    if (!el) return def;
+    return el.type === 'checkbox' ? el.checked : el.value;
+  };
+
+  const period = getVal('period', 'all');
+  const topN = parseInt(getVal('topN', '10'), 10) || 10;
+  const showXp = getVal('showXp', true) !== false;
+  const anonymous = getVal('anonymous', false) === true;
+
+  // Dönem çarpanı: demo verisini gerçekçi ölçekler
+  const factor = period === 'week' ? 0.18 : (period === 'month' ? 0.45 : 1);
+
+  const rows = leaderboardDemoData
+    .map(u => ({ ...u, msg: Math.max(1, Math.round(u.msg * factor)), xp: Math.max(1, Math.round(u.xp * factor)), xpMax: Math.max(10, Math.round(u.xpMax * factor)) }))
+    .sort((a, b) => b.xp - a.xp)
+    .slice(0, topN);
+
+  tbody.innerHTML = rows.map((u, i) => {
+    const rankColor = i < 3 ? rankColors[i] : 'var(--text-muted)';
+    const badgeClass = i < 3 ? rankBadge[i] : 'badge-blurple';
+    const displayName = anonymous ? `Gizli Üye #${i + 1}` : u.name;
+    const pct = Math.min(100, Math.round((u.xp / u.xpMax) * 100));
+
+    return `
+      <tr class="leaderboard-row">
+        <td><b style="color: ${rankColor};">#${i + 1}</b></td>
+        <td>
+          <div class="lb-user-cell">
+            <div class="lb-user-avatar" style="border: 2px solid ${rankColor === 'var(--text-muted)' ? 'var(--border-medium)' : rankColor};">${u.initial}</div>
+            <div>
+              <div style="font-weight: 700; color: #fff;">${displayName}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${anonymous ? 'anonim' : u.tag}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge-tag ${badgeClass}">Seviye ${u.level}</span></td>
+        <td><b>${u.msg.toLocaleString('tr-TR')}</b></td>
+        <td style="width: 200px;">
+          ${showXp ? `
+          <div style="font-size: 11px; margin-bottom: 4px; color: var(--text-dim);">${u.xp.toLocaleString('tr-TR')} / ${u.xpMax.toLocaleString('tr-TR')} XP</div>
+          <div style="height: 6px; background: #111318; border-radius: 3px; overflow: hidden;">
+            <div style="width: ${pct}%; height: 100%; background: ${i === 0 ? 'var(--accent-amber)' : 'var(--blurple)'}; transition: width 0.6s ease;"></div>
+          </div>` : '<span style="font-size: 12px; color: var(--text-dim);">—</span>'}
+        </td>
+      </tr>`;
+  }).join('');
 }
