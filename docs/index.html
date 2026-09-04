@@ -1,0 +1,532 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vybot Cyber Cloud - MEE6 Stili Web Kontrol Paneli</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Ambient Arka Plan Parlamaları -->
+  <div class="bg-glow-top"></div>
+  <div class="bg-glow-bottom"></div>
+
+  <!-- ==========================================
+       Sol Dikey Menü (MEE6 Stili Sidebar)
+       ========================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="bot-monogram">V</div>
+      <div>
+        <div class="bot-title">vybot <span class="bot-badge">v2.0</span></div>
+      </div>
+    </div>
+
+    <!-- Aktif Sunucu Kartı -->
+    <div class="server-switch-btn" id="serverSwitchBtn" title="Sunucu Değiştir">
+      <div class="server-avatar" id="sidebarServerAvatar">V</div>
+      <div class="server-info-col">
+        <div class="server-name" id="sidebarServerName">vybots Cyber HQ</div>
+        <div class="server-sub">Yönetici Paneli</div>
+      </div>
+      <i class="fa-solid fa-chevron-down" style="font-size: 12px; color: var(--text-dim);"></i>
+    </div>
+
+    <!-- Dikey Gezinti Menüsü -->
+    <nav class="sidebar-nav">
+      <div class="nav-label">Genel</div>
+      <div class="nav-item active" data-tab="overview">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Genel Bakış</span>
+      </div>
+
+      <div class="nav-label">Modüller</div>
+      <div class="nav-item" data-tab="leveling">
+        <i class="fa-solid fa-trophy"></i>
+        <span>Seviye & XP</span>
+        <span class="nav-badge">MEE6</span>
+      </div>
+      <div class="nav-item" data-tab="security">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Güvenlik & Auto-Mod</span>
+        <span class="nav-badge">Aktif</span>
+      </div>
+      <div class="nav-item" data-tab="music">
+        <i class="fa-solid fa-music"></i>
+        <span>Müzik Stüdyosu</span>
+        <span class="nav-badge beta">1:1 Master</span>
+      </div>
+      <div class="nav-item" data-tab="ai">
+        <i class="fa-solid fa-brain"></i>
+        <span>Groq Yapay Zeka</span>
+        <span class="nav-badge">0.05s</span>
+      </div>
+
+      <div class="nav-label">Yönetim & Topluluk</div>
+      <div class="nav-item" data-tab="moderation">
+        <i class="fa-solid fa-gavel"></i>
+        <span>Moderasyon & Sicil</span>
+      </div>
+      <div class="nav-item" data-tab="economy">
+        <i class="fa-solid fa-coins"></i>
+        <span>Siber Ekonomi</span>
+      </div>
+      <div class="nav-item" data-tab="tickets">
+        <i class="fa-solid fa-ticket"></i>
+        <span>Canlı Destek</span>
+      </div>
+      <div class="nav-item" data-tab="giveaways">
+        <i class="fa-solid fa-gift"></i>
+        <span>Çekilişler</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="#" class="invite-bot-btn" id="inviteBotBtn" target="_blank">
+        <i class="fa-solid fa-plus"></i> Botu Sunucuna Ekle
+      </a>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       Ana İçerik Bölgesi
+       ========================================== -->
+  <main class="main-wrapper">
+    <!-- Üst Başlık & Discord Profil Çubuğu -->
+    <header class="top-header">
+      <div class="header-left">
+        <i class="fa-solid fa-bars mobile-menu-toggle" id="mobileMenuToggle"></i>
+        <h1 class="page-title" id="headerTitle">Genel Bakış</h1>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>Bulut Sunucu 7/24 Aktif</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Discord OAuth2 Giriş / Profil Alanı -->
+        <a href="#" class="login-btn" id="loginBtn">
+          <i class="fa-brands fa-discord"></i> Discord ile Giriş Yap
+        </a>
+
+        <div class="auth-pill" id="authPill" style="display: none;">
+          <!-- Dinamik JS yüklemesi -->
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+
+      <!-- ==============================================================
+           1. GENEL BAKIŞ SEKMESİ
+           ============================================================== -->
+      <section class="tab-content active" id="tab-overview">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>Hoş Geldiniz, <span id="heroGuildName">vybots Cyber HQ</span>!</h2>
+            <p>MEE6 seviye motoru, kesintisiz 1:1 orijinal albüm müzik akışı, siber koruma ve Groq GPT-OSS-20B yapay zekası ile sunucunuzu profesyonelce yönetin.</p>
+          </div>
+          <a href="#leveling" onclick="document.querySelector('[data-tab=\'leveling\']').click()" class="btn-primary">
+            <i class="fa-solid fa-sliders"></i> Seviye Ayarlarını Düzenle
+          </a>
+        </div>
+
+        <!-- İstatistik Sayaçları -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Toplam Üye</span>
+              <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="stat-val">142</div>
+            <div class="stat-sub">Sunucu Topluluğu</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Güvenlik Skoru</span>
+              <div class="stat-icon green"><i class="fa-solid fa-shield-check"></i></div>
+            </div>
+            <div class="stat-val">%99.8</div>
+            <div class="stat-sub">Anti-Nuke, Anti-Link & Spam Korumalı</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Seviye Sistemi</span>
+              <div class="stat-icon amber"><i class="fa-solid fa-trophy"></i></div>
+            </div>
+            <div class="stat-val">MEE6 Pro</div>
+            <div class="stat-sub">Mesaj Başına 15-25 XP</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Yapay Zeka Hızı</span>
+              <div class="stat-icon cyan"><i class="fa-solid fa-bolt"></i></div>
+            </div>
+            <div class="stat-val">0.05 sn</div>
+            <div class="stat-sub">Groq openai/gpt-oss-20b</div>
+          </div>
+        </div>
+
+        <!-- Hızlı Modül Durumları -->
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-cubes"></i> Sunucu Modül Kontrolü</h3>
+            <span style="font-size: 13px; color: var(--text-dim);">Otomatik Senkronizasyon</span>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🏆 MEE6 Seviye & Deneyim (XP) Motoru</div>
+              <div class="setting-desc">Kullanıcılar konuştukça XP kazanır, seviye atlar ve sunucuda özel ödül rollerine sahip olur.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked id="toggleLevelSystem">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🛡️ Gelişmiş Güvenlik ve Siber Kalkan (Anti-Nuke)</div>
+              <div class="setting-desc">Yetkisiz rol silme, kanal patlatma ve sunucu saldırılarını milisaniyeler içinde bloke eder.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked id="toggleAntiNuke">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🔗 Reklam & Davet Linki Engelleme (Anti-Link)</div>
+              <div class="setting-desc">Discord davet linklerini ve harici reklam bağlantılarını anında siler.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked id="toggleAntiLink">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🤬 Küfür & Argo Sansür Filtresi</div>
+              <div class="setting-desc">Sunucudaki küfürlü ve argo kelimeleri anında temizler ve kullanıcıyı uyarır.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked id="toggleAntiSwear">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================
+           2. SEVİYE & XP SEKMESİ (MEE6 Stili)
+           ============================================================== -->
+      <section class="tab-content" id="tab-leveling">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🏆 MEE6 Seviye & XP Sistemi</h2>
+            <p>Üyelerinizi aktif tutun! Mesaj başına XP oranlarını belirleyin, seviye atlama bildirimlerini özelleştirin ve özel roller tanımlayın.</p>
+          </div>
+          <button class="btn-primary" onclick="showToast('Seviye ayarları başarıyla kaydedildi!', 'success')">
+            <i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet
+          </button>
+        </div>
+
+        <!-- Canlı Rank Kartı Önizleme -->
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-id-card"></i> Canlı Rank Kartı Önizleyicisi</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 13px; color: var(--text-muted);">Kart Tema Rengi:</span>
+              <input type="color" id="rankCardColor" value="#5865f2" style="background:none; border:none; width:30px; height:30px; cursor:pointer;">
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 16px;">Bu görsel, kullanıcılar Discord'da <code>@vybot seviyem kaç</code> yazdığında veya menüden sorguladığında gönderilen karttır.</p>
+          
+          <div class="rank-preview-container">
+            <canvas id="rankCanvas" width="800" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Seviye Yapılandırması -->
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-sliders"></i> Deneyim & Mesaj Parametreleri</h3>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">Minimum Mesaj XP'si</div>
+              <div class="setting-desc">Kullanıcı bir mesaj attığında kazanabileceği en az deneyim puanı.</div>
+            </div>
+            <div class="range-slider-group">
+              <input type="range" min="5" max="50" value="15" class="range-slider" id="sliderXpMin">
+              <span class="range-val-badge" id="valXpMin">15 XP</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">Maksimum Mesaj XP'si</div>
+              <div class="setting-desc">Kullanıcının tek bir mesajla kazanabileceği en yüksek deneyim puanı.</div>
+            </div>
+            <div class="range-slider-group">
+              <input type="range" min="15" max="100" value="25" class="range-slider" id="sliderXpMax">
+              <span class="range-val-badge" id="valXpMax">25 XP</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">XP Bekleme Süresi (Cooldown)</div>
+              <div class="setting-desc">Spam engellemek amacıyla iki XP kazanımı arasında geçmesi gereken süre.</div>
+            </div>
+            <div class="range-slider-group">
+              <input type="range" min="10" max="120" value="60" class="range-slider" id="sliderCooldown">
+              <span class="range-val-badge" id="valCooldown">60 sn</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seviye Ödül Rolleri -->
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-medal"></i> Otomatik Seviye Ödül Rolleri</h3>
+            <button class="btn-secondary" onclick="showToast('Yeni ödül rolü eklendi', 'info')"><i class="fa-solid fa-plus"></i> Ödül Ekle</button>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🥉 Seviye 5 Ödülü</div>
+              <div class="setting-desc">Ulaşıldığında otomatik verilecek rol: <b>@Bronz Üye</b></div>
+            </div>
+            <span class="nav-badge">Seviye 5</span>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🥈 Seviye 10 Ödülü</div>
+              <div class="setting-desc">Ulaşıldığında otomatik verilecek rol: <b>@Gümüş Elit</b></div>
+            </div>
+            <span class="nav-badge">Seviye 10</span>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">🥇 Seviye 25 Ödülü</div>
+              <div class="setting-desc">Ulaşıldığında otomatik verilecek rol: <b>@Altın Usta</b></div>
+            </div>
+            <span class="nav-badge">Seviye 25</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================
+           3. GÜVENLİK & AUTO-MOD SEKMESİ
+           ============================================================== -->
+      <section class="tab-content" id="tab-security">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🛡️ Siber Koruma & Auto-Mod Paneli</h2>
+            <p>Sunucunuzu bot akınlarından, raid saldırılarından ve istenmeyen spam bağlantılarından koruyun.</p>
+          </div>
+          <button class="btn-primary" onclick="showToast('Güvenlik kalkanı güncellendi!', 'success')">
+            <i class="fa-solid fa-shield-check"></i> Korumayı Güçlendir
+          </button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-lock"></i> Kalkan Ayarları</h3>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">💣 Anti-Nuke (Kanal & Rol Patlatma Engeli)</div>
+              <div class="setting-desc">Yetkili hesap çalınsa dahi sunucudaki kanalların veya rollerin toplu silinmesini engeller.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">⚡ Hızlı Mesaj & Spam Engeli (Anti-Spam)</div>
+              <div class="setting-desc">5 saniyede 6'dan fazla mesaj atan kullanıcıları otomatik 1 dakika susturur.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked id="toggleAntiSpam">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">👥 Toplu Etiket Koruması (Anti-Mass Mention)</div>
+              <div class="setting-desc">Tek mesajda 4 veya daha fazla kişiyi etiketleyerek sunucuyu rahatsız edenleri 5 dakika susturur.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================
+           4. MÜZİK STÜDYOSU SEKMESİ
+           ============================================================== -->
+      <section class="tab-content" id="tab-music">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🎵 Müzik Stüdyosu & Canlı Ses Kontrolü</h2>
+            <p>1:1 orijinal albüm masterı kalitesinde, gecikmesiz stereo PCM akışını web üzerinden yönetin.</p>
+          </div>
+          <span class="status-pill"><div class="status-dot"></div> 48kHz Stereo PCM</span>
+        </div>
+
+        <!-- Canlı Oynatıcı Widget'ı -->
+        <div class="music-player-widget">
+          <div class="album-art-wrap">
+            <img src="https://i.scdn.co/image/ab67616d0000b2734121faee8df82c526cbab20b" alt="Billie Jean" id="playerAlbumArt">
+          </div>
+          <div class="music-controls-col">
+            <div class="track-title" id="playerTrackTitle">Billie Jean (Official Album Master)</div>
+            <div class="track-artist" id="playerTrackArtist">Michael Jackson • Thriller Album</div>
+            
+            <div class="progress-bar-wrap">
+              <span style="font-size: 12px; color: var(--text-dim);">01:24</span>
+              <div class="progress-track">
+                <div class="progress-fill"></div>
+              </div>
+              <span style="font-size: 12px; color: var(--text-dim);">04:55</span>
+            </div>
+
+            <div class="player-btn-row">
+              <button class="player-icon-btn"><i class="fa-solid fa-backward-step"></i></button>
+              <button class="player-icon-btn play-circle" id="playerPlayBtn"><i class="fa-solid fa-pause"></i></button>
+              <button class="player-icon-btn"><i class="fa-solid fa-forward-step"></i></button>
+              <button class="player-icon-btn" style="margin-left:auto;"><i class="fa-solid fa-volume-high"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Şarkı Ekleme Alanı -->
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-magnifying-glass"></i> Şarkı Ara ve Kuyruğa Gönder</h3>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <input type="text" class="dash-input" id="songSearchInput" placeholder="Şarkı adı, Spotify bağlantısı veya YouTube URL'si yazın...">
+            <button class="btn-primary" id="addSongBtn"><i class="fa-solid fa-play"></i> Çal</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================
+           5. GROQ YAPAY ZEKA SEKMESİ
+           ============================================================== -->
+      <section class="tab-content" id="tab-ai">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🤖 Groq LPU Yapay Zeka Stüdyosu</h2>
+            <p>OpenAI GPT-OSS-20B modelinin ultra hızlı yanıtları ve düşük token mimarisiyle Discord botunuza zeka katın.</p>
+          </div>
+          <span class="status-pill"><div class="status-dot"></div> 0.05s Tepki Süresi</span>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-terminal"></i> Canlı Yapay Zeka Test Konsolu</h3>
+          </div>
+          
+          <div id="aiChatHistory" style="height: 220px; overflow-y: auto; background: #141518; border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px;">
+            <div style="margin-bottom: 12px; text-align: left;">
+              <span style="background: #2b2d31; color: #f8fafc; padding: 8px 14px; border-radius: 12px; display: inline-block; font-size: 13.5px; border: 1px solid rgba(88,101,242,0.3);">
+                🤖 <b>vybot:</b> Merhaba! Ben vybot. Groq'un hızlı LPU donanımı ve <code>openai/gpt-oss-20b</code> modeli ile çalışıyorum. Bana sunucu yönetimi veya herhangi bir konuda istediğini sorabilirsin!
+              </span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <input type="text" class="dash-input" id="aiPromptInput" placeholder="vybot'a bir soru sorun (Örn: Müzik sistemi nasıl çalışıyor?)...">
+            <button class="btn-primary" id="aiSendBtn"><i class="fa-solid fa-paper-plane"></i> Gönder</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================
+           6. MODERASYON & DİĞER SEKMELER
+           ============================================================== -->
+      <section class="tab-content" id="tab-moderation">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🔨 Moderasyon ve Denetim Kayıtları</h2>
+            <p>Kullanıcı cezalarını inceleyin, sicil geçmişine bakın ve anlık moderasyon işlemlerini gerçekleştirin.</p>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Son Ceza Sicil Kayıtları</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); padding: 10px 0;">✨ Sunucuda henüz aktif bir ceza veya ihlal kaydı bulunmuyor.</p>
+        </div>
+      </section>
+
+      <section class="tab-content" id="tab-economy">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>💰 Siber Ekonomi ve Kumar Sistemi</h2>
+            <p>Kullanıcıların cüzdan, banka ve günlük ödül parametrelerini özelleştirin.</p>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-title">Günlük Ödül (Daily)</div>
+              <div class="setting-desc">24 saatte bir alınabilecek hediye para miktarı.</div>
+            </div>
+            <input type="number" class="dash-input" value="250" style="width: 120px;">
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-content" id="tab-tickets">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🎫 Canlı Destek (Ticket) Paneli</h2>
+            <p>Kullanıcıların tek tıkla özel destek kanalı açmasını sağlayın.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-content" id="tab-giveaways">
+        <div class="module-hero">
+          <div class="hero-text">
+            <h2>🎁 Otomatik Çekiliş Yönetimi</h2>
+            <p>Sunucunuzda butonlu, şeffaf ve otomatik hediye çekilişleri oluşturun.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
