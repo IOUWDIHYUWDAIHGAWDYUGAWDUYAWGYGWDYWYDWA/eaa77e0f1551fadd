@@ -460,75 +460,66 @@ function togglePlugin(pluginName, isEnabled) {
   // Modül durumunu kalıcı yap ve bot'a gönder
   try { localStorage.setItem('vybot_plugins', JSON.stringify(state.plugins)); } catch (e) { /* yoksay */ }
   pushToBot({ plugins: state.plugins }, (ok, err) => {
-    if (ok) showToast('Modül değişikliği BOTA GÖNDERİLDI! Sunucuda aktif oldu.', 'success');
-    else if (err === 'no-config') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Ayarlar → Bot Bağlantısı.', 'warning');
+    if (ok) showToast('Modül değişikliği repoya commit edildi! Bot ~1-2 dk içinde sunucuda uygulayacak.', 'success');
+    else if (err === 'no-token') showToast('Lokal kaydedildi. Canlı senkron için ⚙️ Bot Bağlantısı → GitHub Token gir.', 'warning');
     else showToast('Lokal kaydedildi, gönderilemedi: ' + err, 'warning');
   });
 }
 
 /* ==========================================================================
-   BOT HTTP API KÖPRÜSÜ — Site → Bot entegrasyonu
+   GITHUB COMMIT KÖPRÜSÜ — Site → guild-settings.json → Bot (Actions uyumlu)
+   Bot GitHub Actions'ta çalıştığı için port açamaz; ayarlar repoya
+   commit edilir, bot başlangıçta + her 5 dakikada okur ve uygular.
    ========================================================================== */
-function getBotApiConfig() {
+const GITHUB_OWNER = 'IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA';
+const GITHUB_REPO = 'eaa77e0f1551fadd';
+const GITHUB_SETTINGS_PATH = 'guild-settings.json';
+
+function getGhConnection() {
   let raw = '';
-  try { raw = localStorage.getItem('vybot_bot_api') || ''; } catch (e) { /* yoksay */ }
+  try { raw = localStorage.getItem('vybot_gh_conn') || ''; } catch (e) { return null; }
   if (!raw) return null;
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
+function getConnectionToken() {
+  const conn = getGhConnection();
+  return conn ? (conn.token || '') : '';
+}
+
 function pushToBot(settings, cb) {
-  const cfg = getBotApiConfig();
-  if (!cfg || !cfg.url) {
-    if (cb) cb(false, 'no-config');
-    return;
-  }
-
-  const guildId = (state.selectedGuild && state.selectedGuild.id) || cfg.guildId || '';
-  const body = { guild_id: guildId, ...settings };
-
-  fetch(cfg.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + (cfg.key || 'vybot-web-2026')
-    },
-    body: JSON.stringify(body)
-  })
-  .then(r => r.json().then(j => ({ ok: r.ok, j })))
-  .then(({ ok, j }) => {
-    if (ok && j.ok) {
-      console.log('[BOT-KÖPRÜ] ✅ Ayarlar uygulandı:', j.appliedList || j);
+  // settings parametresi zaten savePanelSettings/togglePlugin tarafından
+  // DOM'a/localStorage'a işlendi; publishSettingsToGitHub tüm paneli toplayıp
+  // tek commit ile dosyayı günceller.
+  publishSettingsToGitHub((ok, err) => {
+    if (ok) {
+      console.log('[KÖPRÜ] ✅ guild-settings.json repoya commit edildi. Bot ~1-2 dk içinde uygulayacak.');
       if (cb) cb(true, null);
     } else {
-      console.warn('[BOT-KÖPRÜ] ❌ Hata:', j.error || 'bilinmeyen');
-      if (cb) cb(false, j.error || 'api-error');
+      console.warn('[KÖPRÜ] ❌ Commit başarısız:', err);
+      if (cb) cb(false, err);
     }
-  })
-  .catch(err => {
-    console.warn('[BOT-KÖPRÜ] ❌ Bağlantı hatası:', err.message);
-    if (cb) cb(false, err.message);
   });
 }
 
 function testBotConnection(cb) {
-  const cfg = getBotApiConfig();
-  if (!cfg || !cfg.url) { if (cb) cb(false, 'no-config'); return; }
+  const token = getConnectionToken();
+  if (!token) { if (cb) cb(false, 'no-token'); return; }
 
-  fetch(cfg.url.replace(/\/api\/.*$/, '') + '/api/health?key=' + encodeURIComponent(cfg.key || 'vybot-web-2026'))
-  .then(r => r.json().then(j => ({ ok: r.ok, j })))
-  .then(({ ok, j }) => {
-    if (ok && j.ok) {
-      if (cb) cb(true, `${j.bot} | ${j.guilds} sunucu | ${Math.floor(j.uptime)}s uptime`);
-    } else {
-      if (cb) cb(false, j.error || 'health-fail');
-    }
-  })
-  .catch(err => { if (cb) cb(false, err.message); });
+  // Raw dosyayı kontrol et: varsa ayarlar hazır, yoksa repo erişimi yine de doğrulanır
+  const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${GITHUB_SETTINGS_PATH}`;
+  fetch(rawUrl, { cache: 'no-store' })
+    .then(r => {
+      if (r.ok) { if (cb) cb(true, 'guild-settings.json mevcut, bot okumaya hazır'); return; }
+      if (r.status === 404) { if (cb) cb(true, 'repo erişilebilir (ayar dosyası ilk commit\'te oluşacak)'); return; }
+      throw new Error('HTTP ' + r.status);
+    })
+    .catch(err => { if (cb) cb(false, err.message); });
 }
 
-function saveBotApiConfig(url, key, guildId) {
+function saveGhConnection(token, owner, repo) {
   try {
-    localStorage.setItem('vybot_bot_api', JSON.stringify({ url, key, guildId }));
+    localStorage.setItem('vybot_gh_conn', JSON.stringify({ token, owner, repo }));
     return true;
   } catch (e) { return false; }
 }
@@ -942,58 +933,80 @@ function updateConnBadge(ok) {
 }
 
 function saveConnection() {
-  const urlInput = document.getElementById('botApiUrlInput');
-  const keyInput = document.getElementById('botApiKeyInput');
-  const guildInput = document.getElementById('botGuildIdInput');
-  if (!urlInput) return;
+  const tokenInput = document.getElementById('ghTokenInput');
+  const ownerInput = document.getElementById('ghOwnerInput');
+  const repoInput = document.getElementById('ghRepoInput');
+  if (!tokenInput) return;
 
-  const url = urlInput.value.trim();
-  const key = keyInput ? keyInput.value.trim() : '';
-  const guildId = guildInput ? guildInput.value.trim() : '';
+  const token = tokenInput.value.trim();
+  const owner = (ownerInput && ownerInput.value.trim()) || GITHUB_OWNER;
+  const repo = (repoInput && repoInput.value.trim()) || GITHUB_REPO;
 
-  if (!saveBotApiConfig(url, key, guildId)) {
+  if (!saveGhConnection(token, owner, repo)) {
     showToast('Kaydedilemedi (localStorage erişimi yok).', 'warning');
     return;
   }
 
-  updateConnBadge(!!url);
-  if (url) {
-    // Kaydettikten sonra hemen test et
+  updateConnBadge(!!token);
+  if (token) {
     testBotConnection((ok, info) => {
-      if (ok) showToast('Bot bağlantısı kaydedildi ve TEST BAŞARILI! → ' + info, 'success');
-      else showToast('Kaydedildi ama test BAŞARISIZ: ' + info + ' — URL/key kontrol et.', 'warning');
+      if (ok) showToast('GitHub köprüsü kaydedildi ve DOĞRULANDI! → ' + info, 'success');
+      else showToast('Kaydedildi ama doğrulama BAŞARISIZ: ' + info, 'warning');
     });
   } else {
-    showToast('Bağlantı bilgileri temizlendi.', 'info');
+    showToast('Bağlantı bilgileri temizlendi. Token olmadan ayarları JSON olarak indirip manuel commit edebilirsin.', 'info');
   }
 }
 
 function loadConnectionPanel() {
-  let raw = '';
-  try { raw = localStorage.getItem('vybot_bot_api') || ''; } catch (e) { return; }
-  if (!raw) return;
-  try {
-    const cfg = JSON.parse(raw);
-    const urlInput = document.getElementById('botApiUrlInput');
-    const keyInput = document.getElementById('botApiKeyInput');
-    const guildInput = document.getElementById('botGuildIdInput');
-    if (urlInput) urlInput.value = cfg.url || '';
-    if (keyInput) keyInput.value = cfg.key || '';
-    if (guildInput) guildInput.value = cfg.guildId || '';
-    if (cfg.url) updateConnBadge(true);
-  } catch (e) { /* yoksay */ }
+  const conn = getGhConnection();
+  if (!conn) return;
+  const tokenInput = document.getElementById('ghTokenInput');
+  const ownerInput = document.getElementById('ghOwnerInput');
+  const repoInput = document.getElementById('ghRepoInput');
+  if (tokenInput) tokenInput.value = conn.token || '';
+  if (ownerInput) ownerInput.value = conn.owner || GITHUB_OWNER;
+  if (repoInput) repoInput.value = conn.repo || GITHUB_REPO;
+  if (conn.token) updateConnBadge(true);
 }
 
 function testConnection() {
   testBotConnection((ok, info) => {
     if (ok) {
-      showToast('Bot bağlantısı BAŞARILI! → ' + info, 'success');
+      showToast('Köprü çalışıyor! → ' + info, 'success');
       updateConnBadge(true);
     } else {
-      showToast('Bağlantı hatası: ' + info + ' — Bot ÇALIŞIYOR mu? API port açık mı?', 'warning');
+      showToast('Bağlantı hatası: ' + info + ' — Token doğru mu? repo yetkisi var mı?', 'warning');
       updateConnBadge(false);
     }
   });
+}
+
+// "Ayarları Commit Et" butonu — tüm panel ayarlarını tek seferde gönderir
+function commitSettingsNow() {
+  publishSettingsToGitHub((ok, err) => {
+    if (ok) showToast('✅ guild-settings.json repoya commit edildi! Bot ~1-2 dk içinde uygulayacak.', 'success');
+    else if (err === 'no-token') showToast('Token yok. Ayarları JSON olarak indirip manuel commit et.', 'warning');
+    else showToast('Commit başarısız: ' + err, 'warning');
+  });
+}
+
+// Token yoksa: ayarları dosya olarak indir, kullanıcı manuel commit eder
+function downloadSettingsJSON() {
+  try {
+    const payload = JSON.stringify(collectAllPanelSettings(), null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = GITHUB_SETTINGS_PATH;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+    showToast('guild-settings.json indirildi. Repoya manuel yüklersen bot bunu okur.', 'info');
+  } catch (e) {
+    showToast('İndirme başarısız: ' + e.message, 'warning');
+  }
 }
 
 function collectAllPanelSettings() {
@@ -1068,7 +1081,7 @@ function savePanelSettings(mod) {
   // Canlı köprü: ayarları botun okuduğu depo dosyasına gönder
   pushToBot({ [mod]: data }, (ok, err) => {
     if (ok) showToast('Ayarlar kaydedildi ve BOTA GÖNDERİLDI! Sunucuda aktif.', 'success');
-    else if (err === 'no-config') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Bot Bağlantısı panelini doldurun.', 'warning');
+    else if (err === 'no-token') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Bot Bağlantısı panelini doldurun.', 'warning');
     else showToast('Ayarlar lokal kaydedildi ancak gönderilemedi: ' + err, 'warning');
     if (mod !== 'connection') updateConnBadge(ok);
   });

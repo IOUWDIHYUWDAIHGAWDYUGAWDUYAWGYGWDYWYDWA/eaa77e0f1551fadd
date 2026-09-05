@@ -3222,42 +3222,42 @@ input:checked + .slider-switch:before {
               </div>
             </div>
 
-            <!-- Bot Bağlantısı: HTTP API Köprüsü -->
+            <!-- Bot Bağlantısı: GitHub Commit Köprüsü (Actions uyumlu) -->
             <div class="settings-block" data-settings="connection">
               <div class="block-title-row">
-                <h3><i class="fa-solid fa-plug"></i> Bot Bağlantısı (Canlı HTTP API Köprüsü)</h3>
+                <h3><i class="fa-solid fa-plug"></i> Bot Bağlantısı (GitHub Commit Köprüsü)</h3>
                 <span class="badge-tag" id="connStatusBadge" style="border-color: var(--accent-red); color: var(--accent-red);">Bağlı Değil</span>
               </div>
 
               <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 16px;">
-                Bot sunucunuzda çalışırken <b>doğrudan bot'a HTTP POST</b> gönderir — ayarlar anında
-                Discord sunucunuza uygulanır (hoş geldin, seviye, güvenlik, modül aç/kapa vb.).
-                <b>Token gerekmez</b> — sadece botun API adresi ve anahtar lazım.
-                <code>API_KEY</code> botun <code>.env</code> dosyasında, default: <code>vybot-web-2026</code>.
+                Ayarların her kaydedilişinde <code>guild-settings.json</code> dosyası bu repoya commit edilir.
+                Commit <code>main</code>'e düştüğü an GitHub Actions botu yeniden başlatır ve ayarlar
+                <b>~1-2 dakika içinde sunucunuza uygulanır</b> (hoş geldin, seviye, güvenlik, modül aç/kapa vb.).
+                Token yalnızca tarayıcınızda saklanır, sunucuya gönderilmez.
               </p>
 
               <div class="setting-item-row">
                 <div class="setting-label-col">
-                  <h4>Bot API Adresi</h4>
-                  <p>Botun çalıştığı sunucu + port. Örn: <code>http://IP:8080/api/settings</code></p>
+                  <h4>GitHub Token (PAT)</h4>
+                  <p><code>repo</code> yetkili Personal Access Token. Boş bırakılırsa ayarlar JSON olarak indirilir, manuel commit gerekir.</p>
                 </div>
-                <input type="text" class="discord-input" id="botApiUrlInput" placeholder="http://1.2.3.4:8080/api/settings" style="width: 340px;">
+                <input type="password" class="discord-input" id="ghTokenInput" placeholder="ghp_..." style="width: 340px;">
               </div>
 
               <div class="setting-item-row">
                 <div class="setting-label-col">
-                  <h4>API Key</h4>
-                  <p>Botun <code>.env</code> dosyasındaki <code>API_KEY</code> değeri.</p>
+                  <h4>Repo Owner</h4>
+                  <p>guild-settings.json dosyasının yükleneceği depo sahibi.</p>
                 </div>
-                <input type="password" class="discord-input" id="botApiKeyInput" placeholder="vybot-web-2026" style="width: 340px;">
+                <input type="text" class="discord-input" id="ghOwnerInput" placeholder="IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA" style="width: 340px;">
               </div>
 
               <div class="setting-item-row">
                 <div class="setting-label-col">
-                  <h4>Guild ID (opsiyonel)</h4>
-                  <p>Boş bırakılanrsa aktif sunucu otomatik kullanılır.</p>
+                  <h4>Repo Adı</h4>
+                  <p>Depo adı. Varsayılan: <code>eaa77e0f1551fadd</code></p>
                 </div>
-                <input type="text" class="discord-input" id="botGuildIdInput" placeholder="1536835757132751048" style="width: 340px;">
+                <input type="text" class="discord-input" id="ghRepoInput" placeholder="eaa77e0f1551fadd" style="width: 340px;">
               </div>
 
               <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
@@ -3266,6 +3266,12 @@ input:checked + .slider-switch:before {
                 </button>
                 <button class="btn btn-secondary" onclick="testConnection()">
                   <i class="fa-solid fa-satellite-dish"></i> Bağlantıyı Test Et
+                </button>
+                <button class="btn btn-secondary" onclick="commitSettingsNow()">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Ayarları Commit Et
+                </button>
+                <button class="btn btn-secondary" onclick="downloadSettingsJSON()">
+                  <i class="fa-solid fa-download"></i> JSON İndir
                 </button>
               </div>
             </div>
