@@ -2947,7 +2947,7 @@ input:checked + .slider-switch:before {
             </div>
 
             <!-- Ayarlar -->
-            <div class="settings-block">
+            <div class="settings-block" data-settings="leveling">
               <div class="block-title-row">
                 <h3><i class="fa-solid fa-sliders"></i> XP Puanı ve Seviye Atlama Kuralları</h3>
               </div>
@@ -2957,7 +2957,7 @@ input:checked + .slider-switch:before {
                   <h4>Mesaj Başına Minimum XP</h4>
                   <p>Her geçerli mesaj için verilecek en az XP miktarı.</p>
                 </div>
-                <input type="number" class="discord-input" value="15" style="width: 100px;">
+                <input type="number" class="discord-input" value="15" data-set="minXp" style="width: 100px;">
               </div>
 
               <div class="setting-item-row">
@@ -2965,7 +2965,7 @@ input:checked + .slider-switch:before {
                   <h4>Mesaj Başına Maksimum XP</h4>
                   <p>Her geçerli mesaj için verilebilecek en fazla XP miktarı.</p>
                 </div>
-                <input type="number" class="discord-input" value="25" style="width: 100px;">
+                <input type="number" class="discord-input" value="25" data-set="maxXp" style="width: 100px;">
               </div>
 
               <div class="setting-item-row">
@@ -2973,7 +2973,7 @@ input:checked + .slider-switch:before {
                   <h4>Seviye Atlama Duyuru Kanalı</h4>
                   <p>Kullanıcı seviye atladığında tebrik mesajının yazılacağı kanal.</p>
                 </div>
-                <select class="discord-select" style="width: 220px;">
+                <select class="discord-select" style="width: 220px;" data-set="levelupChannel">
                   <option selected>Mevcut Kanal (Mesajın Yazıldığı)</option>
                   <option># 🏆・seviye-atlama</option>
                   <option># 📢・duyurular</option>
