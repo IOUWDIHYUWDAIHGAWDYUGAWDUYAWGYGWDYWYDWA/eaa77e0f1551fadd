@@ -461,67 +461,148 @@ function togglePlugin(pluginName, isEnabled) {
   try { localStorage.setItem('vybot_plugins', JSON.stringify(state.plugins)); } catch (e) { /* yoksay */ }
   pushToBot({ plugins: state.plugins }, (ok, err) => {
     if (ok) showToast('Modül değişikliği repoya commit edildi! Bot ~1-2 dk içinde sunucuda uygulayacak.', 'success');
-    else if (err === 'no-token') showToast('Lokal kaydedildi. Canlı senkron için ⚙️ Bot Bağlantısı → GitHub Token gir.', 'warning');
+    else if (err === 'no-bridge' || err === 'bridge-dead') showToast('Lokal kaydedildi. Köprü kurmak için Discord sunucunda /panel-bagla yaz, sonra Otomatik Bağlan butonuna bas.', 'warning');
     else showToast('Lokal kaydedildi, gönderilemedi: ' + err, 'warning');
   });
 }
 
 /* ==========================================================================
-   GITHUB COMMIT KÖPRÜSÜ — Site → guild-settings.json → Bot (Actions uyumlu)
-   Bot GitHub Actions'ta çalıştığı için port açamaz; ayarlar repoya
-   commit edilir, bot başlangıçta + her 5 dakikada okur ve uygular.
+   DISCORD WEBHOOK KÖPRÜSÜ — Site ↔ Bot (token yok, 3. parti yok)
+   AYARLAR  : site → webhook POST (JSON eki) → bot anında uygular
+   CANLI DATA: bot → live-data dalına 5 dk'da bir yazar → site okur
+   Kurulum: kullanıcı Discord'da /panel-bagla yazar, gerisi otomatik.
    ========================================================================== */
-const GITHUB_OWNER = 'IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA';
-const GITHUB_REPO = 'eaa77e0f1551fadd';
-const GITHUB_SETTINGS_PATH = 'guild-settings.json';
+const LIVE_DATA_URL = 'https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/live-data.json';
 
-function getGhConnection() {
-  let raw = '';
-  try { raw = localStorage.getItem('vybot_gh_conn') || ''; } catch (e) { return null; }
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch (e) { return null; }
+function currentGuildId() {
+  return (state.selectedGuild && state.selectedGuild.id) || '1536835757132751048';
 }
 
-function getConnectionToken() {
-  const conn = getGhConnection();
-  return conn ? (conn.token || '') : '';
+function getBridgeUrl(guildId) {
+  try { return localStorage.getItem('vybot_bridge_' + (guildId || currentGuildId())) || ''; }
+  catch (e) { return ''; }
 }
 
+function setBridgeUrl(guildId, url) {
+  try { localStorage.setItem('vybot_bridge_' + guildId, url); return true; }
+  catch (e) { return false; }
+}
+
+/* SİTE → BOT: ayarları webhook'a JSON dosyası olarak gönder (anında uygulanır) */
 function pushToBot(settings, cb) {
-  // settings parametresi zaten savePanelSettings/togglePlugin tarafından
-  // DOM'a/localStorage'a işlendi; publishSettingsToGitHub tüm paneli toplayıp
-  // tek commit ile dosyayı günceller.
-  publishSettingsToGitHub((ok, err) => {
-    if (ok) {
-      console.log('[KÖPRÜ] ✅ guild-settings.json repoya commit edildi. Bot ~1-2 dk içinde uygulayacak.');
-      if (cb) cb(true, null);
-    } else {
-      console.warn('[KÖPRÜ] ❌ Commit başarısız:', err);
-      if (cb) cb(false, err);
-    }
-  });
-}
+  const url = getBridgeUrl();
+  if (!url) {
+    if (cb) cb(false, 'no-bridge');
+    return;
+  }
 
-function testBotConnection(cb) {
-  const token = getConnectionToken();
-  if (!token) { if (cb) cb(false, 'no-token'); return; }
+  // collectAllPanelSettings() tüm panelleri toplayıp guild ID anahtarıyla paketler
+  const payload = collectAllPanelSettings();
+  const json = JSON.stringify(payload, null, 2);
 
-  // Raw dosyayı kontrol et: varsa ayarlar hazır, yoksa repo erişimi yine de doğrulanır
-  const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${GITHUB_SETTINGS_PATH}`;
-  fetch(rawUrl, { cache: 'no-store' })
+  const form = new FormData();
+  form.append('payload_json', JSON.stringify({
+    username: 'Web Paneli',
+    embeds: [{ title: '⚙️ Panel ayar güncellemesi', description: 'Web panelinden otomatik gönderildi.' }]
+  }));
+  form.append('files[0]', new Blob([json], { type: 'application/json' }), 'settings.json');
+
+  fetch(url + '?wait=false', { method: 'POST', body: form })
     .then(r => {
-      if (r.ok) { if (cb) cb(true, 'guild-settings.json mevcut, bot okumaya hazır'); return; }
-      if (r.status === 404) { if (cb) cb(true, 'repo erişilebilir (ayar dosyası ilk commit\'te oluşacak)'); return; }
-      throw new Error('HTTP ' + r.status);
+      if (r.ok || r.status === 204) {
+        console.log('[KÖPRÜ] ✅ Ayarlar webhook ile gönderildi — bot saniyeler içinde uygulayacak.');
+        if (cb) cb(true, null);
+      } else if (r.status === 404) {
+        if (cb) cb(false, 'bridge-dead');
+      } else {
+        throw new Error('HTTP ' + r.status);
+      }
     })
     .catch(err => { if (cb) cb(false, err.message); });
 }
 
-function saveGhConnection(token, owner, repo) {
-  try {
-    localStorage.setItem('vybot_gh_conn', JSON.stringify({ token, owner, repo }));
-    return true;
-  } catch (e) { return false; }
+/* CANLI DATA: botun yazdığı gerçek verileri oku */
+function fetchLiveData(cb) {
+  fetch(LIVE_DATA_URL, { cache: 'no-store' })
+    .then(r => {
+      if (r.status === 404) { if (cb) cb(null, 'no-live-data'); return; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => { if (data !== undefined && cb) cb(data, null); })
+    .catch(err => { if (cb) cb(null, err.message); });
+}
+
+/* Bağlantı testi: canlı data var mı + bu sunucunun köprüsü kurulu mu */
+function testBotConnection(cb) {
+  fetchLiveData((data, err) => {
+    if (err === 'no-live-data') { if (cb) cb(false, 'Henüz canlı veri yok — bot /panel-bagla sonrası ilk senkronu bekliyor'); return; }
+    if (err) { if (cb) cb(false, err); return; }
+    const g = data.guilds && data.guilds[currentGuildId()];
+    if (!g) { if (cb) cb(false, 'Bu sunucu canlı veride yok — bot sunucunda mı?'); return; }
+    if (cb) cb(true, `${data.bot.username} canlı | ${g.memberCount} üye | ping ${data.bot.ping}ms | son senkron: ${new Date(data.updatedAt).toLocaleTimeString('tr-TR')}`);
+  });
+}
+
+/* Tek tıkla otomatik bağlan: /panel-bagla kurulmuşsa webhook URL'sini keşfet */
+function autoConnectBridge(cb) {
+  fetchLiveData((data, err) => {
+    if (err) { if (cb) cb(false, err); return; }
+    const g = data.guilds && data.guilds[currentGuildId()];
+    if (!g || !g.bridge || !g.bridge.webhook_url) {
+      if (cb) cb(false, 'Köprü bulunamadı — Discord sunucunda /panel-bagla komutunu çalıştır!');
+      return;
+    }
+    setBridgeUrl(g.id, g.bridge.webhook_url);
+    if (cb) cb(true, `<#${g.bridge.channel_id}> kanalındaki köprüye bağlandın`);
+  });
+}
+
+/* Panel canlı durum kartını güncelle */
+function loadLivePanel() {
+  fetchLiveData((data, err) => {
+    const botEl = document.getElementById('liveBotStatus');
+    const memEl = document.getElementById('liveMemberCount');
+    const syncEl = document.getElementById('liveSyncTime');
+    const bridgeEl = document.getElementById('liveBridgeStatus');
+    if (!botEl) return;
+
+    if (err || !data) {
+      botEl.innerHTML = '<span style="color: var(--accent-amber);">İlk senkron bekleniyor…</span>';
+      memEl.textContent = '—';
+      syncEl.textContent = '—';
+      bridgeEl.innerHTML = '<span style="color: var(--accent-amber);">/panel-bagla gerekli</span>';
+      return;
+    }
+
+    const g = data.guilds[currentGuildId()];
+    botEl.innerHTML = `<span style="color: var(--accent-green);">● ${data.bot.username} ÇEVRİMİÇİ</span> (ping ${data.bot.ping}ms)`;
+    memEl.textContent = g ? g.memberCount.toLocaleString('tr-TR') : '—';
+    syncEl.textContent = new Date(data.updatedAt).toLocaleTimeString('tr-TR');
+    bridgeEl.innerHTML = g && g.bridge
+      ? '<span style="color: var(--accent-green);">✅ Kurulu</span>'
+      : '<span style="color: var(--accent-amber);">⏳ /panel-bagla bekleniyor</span>';
+
+    // Gerçek veri geldiyse liderlik tablosunu canlıya çevir
+    if (g && g.leaderboard && g.leaderboard.length > 0) {
+      renderRealLeaderboard(g.leaderboard);
+    }
+  });
+}
+
+/* Otomatik bağlan butonu */
+function autoConnect() {
+  showToast('Canlı veriler okunuyor, köprü aranıyor…', 'info');
+  autoConnectBridge((ok, info) => {
+    if (ok) {
+      showToast('🚀 ' + info + ' — artık her ayar anında uygulanacak!', 'success');
+      updateConnBadge(true);
+      loadLivePanel();
+    } else {
+      showToast('❌ ' + info, 'warning');
+      updateConnBadge(false);
+    }
+  });
 }
 
 /* ==========================================================================
@@ -933,84 +1014,32 @@ function updateConnBadge(ok) {
 }
 
 function saveConnection() {
-  const tokenInput = document.getElementById('ghTokenInput');
-  const ownerInput = document.getElementById('ghOwnerInput');
-  const repoInput = document.getElementById('ghRepoInput');
-  if (!tokenInput) return;
-
-  const token = tokenInput.value.trim();
-  const owner = (ownerInput && ownerInput.value.trim()) || GITHUB_OWNER;
-  const repo = (repoInput && repoInput.value.trim()) || GITHUB_REPO;
-
-  if (!saveGhConnection(token, owner, repo)) {
-    showToast('Kaydedilemedi (localStorage erişimi yok).', 'warning');
-    return;
-  }
-
-  updateConnBadge(!!token);
-  if (token) {
-    testBotConnection((ok, info) => {
-      if (ok) showToast('GitHub köprüsü kaydedildi ve DOĞRULANDI! → ' + info, 'success');
-      else showToast('Kaydedildi ama doğrulama BAŞARISIZ: ' + info, 'warning');
-    });
-  } else {
-    showToast('Bağlantı bilgileri temizlendi. Token olmadan ayarları JSON olarak indirip manuel commit edebilirsin.', 'info');
-  }
+  // Geriye dönük uyumluluk: artık tek tıkla otomatik bağlanma var
+  autoConnect();
 }
 
 function loadConnectionPanel() {
-  const conn = getGhConnection();
-  if (!conn) return;
-  const tokenInput = document.getElementById('ghTokenInput');
-  const ownerInput = document.getElementById('ghOwnerInput');
-  const repoInput = document.getElementById('ghRepoInput');
-  if (tokenInput) tokenInput.value = conn.token || '';
-  if (ownerInput) ownerInput.value = conn.owner || GITHUB_OWNER;
-  if (repoInput) repoInput.value = conn.repo || GITHUB_REPO;
-  if (conn.token) updateConnBadge(true);
+  // Kayıtlı köprü varsa rozeti yeşile çek, canlı durum kartını doldur
+  if (getBridgeUrl()) updateConnBadge(true);
+  loadLivePanel();
 }
 
 function testConnection() {
+  showToast('Bot durumu kontrol ediliyor…', 'info');
   testBotConnection((ok, info) => {
     if (ok) {
-      showToast('Köprü çalışıyor! → ' + info, 'success');
+      showToast('🟢 ' + info, 'success');
       updateConnBadge(true);
     } else {
-      showToast('Bağlantı hatası: ' + info + ' — Token doğru mu? repo yetkisi var mı?', 'warning');
+      showToast('🟡 ' + info, 'warning');
       updateConnBadge(false);
     }
+    loadLivePanel();
   });
-}
-
-// "Ayarları Commit Et" butonu — tüm panel ayarlarını tek seferde gönderir
-function commitSettingsNow() {
-  publishSettingsToGitHub((ok, err) => {
-    if (ok) showToast('✅ guild-settings.json repoya commit edildi! Bot ~1-2 dk içinde uygulayacak.', 'success');
-    else if (err === 'no-token') showToast('Token yok. Ayarları JSON olarak indirip manuel commit et.', 'warning');
-    else showToast('Commit başarısız: ' + err, 'warning');
-  });
-}
-
-// Token yoksa: ayarları dosya olarak indir, kullanıcı manuel commit eder
-function downloadSettingsJSON() {
-  try {
-    const payload = JSON.stringify(collectAllPanelSettings(), null, 2);
-    const blob = new Blob([payload], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = GITHUB_SETTINGS_PATH;
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(a.href);
-    a.remove();
-    showToast('guild-settings.json indirildi. Repoya manuel yüklersen bot bunu okur.', 'info');
-  } catch (e) {
-    showToast('İndirme başarısız: ' + e.message, 'warning');
-  }
 }
 
 function collectAllPanelSettings() {
-  const guildName = state.selectedGuild ? state.selectedGuild.name : 'vybots Cyber HQ';
+  const guildId = currentGuildId();
   const mods = {};
 
   document.querySelectorAll('[data-settings]').forEach(block => {
@@ -1026,41 +1055,41 @@ function collectAllPanelSettings() {
   mods.plugins = { ...(state.plugins || {}) };
 
   return {
-    version: 2,
+    version: 3,
     updated_at: new Date().toISOString(),
-    guilds: { [guildName]: mods }
+    guilds: { [guildId]: mods }
   };
 }
 
-function publishSettingsToGitHub(callback) {
-  const token = getConnectionToken();
-  if (!token) { if (callback) callback(false, 'no-token'); return; }
+/* Bot'un gönderdiği GERÇEK liderlik verisini tabloya bas */
+function renderRealLeaderboard(rows) {
+  const tbody = document.getElementById('leaderboardTbody');
+  if (!tbody || !rows || rows.length === 0) return;
 
-  const payload = JSON.stringify(collectAllPanelSettings(), null, 2);
-  const api = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_SETTINGS_PATH}`;
-  const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' };
+  const rankColors = ['#f0b232', '#cbd5e1', '#cd7f32'];
+  const badgeClass = ['badge-yellow', 'badge-blurple', 'badge-blurple'];
 
-  // Önce mevcut dosyanın sha'sını al (güncelleme için gerekli)
-  fetch(api, { headers: headers })
-    .then(r => {
-      if (r.status === 404) return { sha: null };
-      if (!r.ok) throw new Error('GitHub ' + r.status);
-      return r.json();
-    })
-    .then(file => fetch(api, {
-      method: 'PUT',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'web-panel: sunucu ayar güncellemesi (otomatik)',
-        content: btoa(unescape(encodeURIComponent(payload))),
-        sha: file.sha || undefined
-      })
-    }))
-    .then(r => {
-      if (!r.ok) throw new Error('GitHub ' + r.status);
-      if (callback) callback(true);
-    })
-    .catch(err => { if (callback) callback(false, err.message); });
+  tbody.innerHTML = rows.map((u, i) => {
+    const rankColor = i < 3 ? rankColors[i] : 'var(--text-muted)';
+    const badge = i < 3 ? badgeClass[i] : 'badge-blurple';
+    const initial = (u.name || '?').charAt(0).toUpperCase();
+    return `
+      <tr class="leaderboard-row">
+        <td><b style="color: ${rankColor};">#${i + 1}</b></td>
+        <td>
+          <div class="lb-user-cell">
+            <div class="lb-user-avatar" style="border: 2px solid ${rankColor === 'var(--text-muted)' ? 'var(--border-medium)' : rankColor};">${initial}</div>
+            <div>
+              <div style="font-weight: 700; color: #fff;">${escapeHtml(u.name || 'Bilinmeyen')}</div>
+              <div style="font-size: 11px; color: var(--accent-green);">CANLI VERİ</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge-tag ${badge}">Seviye ${u.level}</span></td>
+        <td><b>${Number(u.xp).toLocaleString('tr-TR')}</b></td>
+        <td style="width: 200px;"><span style="font-size: 12px; color: var(--accent-green);">● Gerçek zamanlı</span></td>
+      </tr>`;
+  }).join('');
 }
 
 function savePanelSettings(mod) {
@@ -1081,7 +1110,7 @@ function savePanelSettings(mod) {
   // Canlı köprü: ayarları botun okuduğu depo dosyasına gönder
   pushToBot({ [mod]: data }, (ok, err) => {
     if (ok) showToast('Ayarlar kaydedildi ve BOTA GÖNDERİLDI! Sunucuda aktif.', 'success');
-    else if (err === 'no-token') showToast('Ayarlar lokal kaydedildi. Bot bağlantısı için ⚙️ Bot Bağlantısı panelini doldurun.', 'warning');
+    else if (err === 'no-bridge' || err === 'bridge-dead') showToast('Ayarlar lokal kaydedildi. Köprü için Discord sunucunda /panel-bagla komutunu çalıştır, sonra Otomatik Bağlan butonuna bas.', 'warning');
     else showToast('Ayarlar lokal kaydedildi ancak gönderilemedi: ' + err, 'warning');
     if (mod !== 'connection') updateConnBadge(ok);
   });

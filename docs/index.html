@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <!-- FontAwesome 6 Pro Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=1788553000000">
+  <link rel="stylesheet" href="style.css?v=1788565000000">
 <style>
 /* Inlined CSS to eliminate 100% of browser caching issues */
 .app-view { display: none !important; }
@@ -3222,56 +3222,53 @@ input:checked + .slider-switch:before {
               </div>
             </div>
 
-            <!-- Bot Bağlantısı: GitHub Commit Köprüsü (Actions uyumlu) -->
+            <!-- Bot Bağlantısı: Discord Webhook Köprüsü (token yok, otomatik) -->
             <div class="settings-block" data-settings="connection">
               <div class="block-title-row">
-                <h3><i class="fa-solid fa-plug"></i> Bot Bağlantısı (GitHub Commit Köprüsü)</h3>
+                <h3><i class="fa-solid fa-plug"></i> Bot Bağlantısı (Anlık Discord Köprüsü)</h3>
                 <span class="badge-tag" id="connStatusBadge" style="border-color: var(--accent-red); color: var(--accent-red);">Bağlı Değil</span>
               </div>
 
               <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 16px;">
-                Ayarların her kaydedilişinde <code>guild-settings.json</code> dosyası bu repoya commit edilir.
-                Commit <code>main</code>'e düştüğü an GitHub Actions botu yeniden başlatır ve ayarlar
-                <b>~1-2 dakika içinde sunucunuza uygulanır</b> (hoş geldin, seviye, güvenlik, modül aç/kapa vb.).
-                Token yalnızca tarayıcınızda saklanır, sunucuya gönderilmez.
+                Panelde kaydettiğin her ayar <b>saniyeler içinde</b> bu sunucuda uygulanır —
+                token girmene gerek yok, her şey Discord üzerinden akar.
               </p>
 
-              <div class="setting-item-row">
-                <div class="setting-label-col">
-                  <h4>GitHub Token (PAT)</h4>
-                  <p><code>repo</code> yetkili Personal Access Token. Boş bırakılırsa ayarlar JSON olarak indirilir, manuel commit gerekir.</p>
+              <!-- Canlı durum kartı -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px;">
+                  <div style="font-size: 11px; color: var(--text-dim); font-weight: 700; margin-bottom: 6px;">BOT DURUMU</div>
+                  <div id="liveBotStatus" style="font-size: 13.5px; font-weight: 700;">Kontrol ediliyor…</div>
                 </div>
-                <input type="password" class="discord-input" id="ghTokenInput" placeholder="ghp_..." style="width: 340px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px;">
+                  <div style="font-size: 11px; color: var(--text-dim); font-weight: 700; margin-bottom: 6px;">ÜYE SAYISI (GERÇEK)</div>
+                  <div id="liveMemberCount" style="font-size: 13.5px; font-weight: 700; color: #fff;">—</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px;">
+                  <div style="font-size: 11px; color: var(--text-dim); font-weight: 700; margin-bottom: 6px;">KÖPRÜ DURUMU</div>
+                  <div id="liveBridgeStatus" style="font-size: 13.5px; font-weight: 700;">—</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px;">
+                  <div style="font-size: 11px; color: var(--text-dim); font-weight: 700; margin-bottom: 6px;">SON SENKRON</div>
+                  <div id="liveSyncTime" style="font-size: 13.5px; font-weight: 700; color: #fff;">—</div>
+                </div>
               </div>
 
-              <div class="setting-item-row">
-                <div class="setting-label-col">
-                  <h4>Repo Owner</h4>
-                  <p>guild-settings.json dosyasının yükleneceği depo sahibi.</p>
+              <!-- Kurulum adımları -->
+              <div style="background: rgba(88, 101, 242, 0.08); border: 1px solid rgba(88, 101, 242, 0.25); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;">
+                <div style="font-weight: 800; color: #fff; font-size: 13.5px; margin-bottom: 10px;"><i class="fa-solid fa-list-ol" style="color: var(--blurple); margin-right: 6px;"></i>2 adımda kurulum:</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 2;">
+                  <b style="color: #fff;">1.</b> Discord sunucunda botun olduğu kanala <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">/panel-bagla</code> yaz<br>
+                  <b style="color: #fff;">2.</b> Aşağıdaki <b>Otomatik Bağlan</b> butonuna bas — bot köprüyü kendisi keşfeder!
                 </div>
-                <input type="text" class="discord-input" id="ghOwnerInput" placeholder="IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA" style="width: 340px;">
               </div>
 
-              <div class="setting-item-row">
-                <div class="setting-label-col">
-                  <h4>Repo Adı</h4>
-                  <p>Depo adı. Varsayılan: <code>eaa77e0f1551fadd</code></p>
-                </div>
-                <input type="text" class="discord-input" id="ghRepoInput" placeholder="eaa77e0f1551fadd" style="width: 340px;">
-              </div>
-
-              <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
-                <button class="btn btn-blurple" onclick="saveConnection()">
-                  <i class="fa-solid fa-link"></i> Bağlantıyı Kaydet
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-blurple" onclick="autoConnect()">
+                  <i class="fa-solid fa-rocket"></i> 🚀 Otomatik Bağlan
                 </button>
                 <button class="btn btn-secondary" onclick="testConnection()">
-                  <i class="fa-solid fa-satellite-dish"></i> Bağlantıyı Test Et
-                </button>
-                <button class="btn btn-secondary" onclick="commitSettingsNow()">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Ayarları Commit Et
-                </button>
-                <button class="btn btn-secondary" onclick="downloadSettingsJSON()">
-                  <i class="fa-solid fa-download"></i> JSON İndir
+                  <i class="fa-solid fa-satellite-dish"></i> Durumu Yenile
                 </button>
               </div>
             </div>
@@ -3581,6 +3578,6 @@ input:checked + .slider-switch:before {
   <!-- Toast Bildirim Yığını -->
   <div class="toast-stack" id="toastStack"></div>
 
-  <script src="app.js?v=1788562000000"></script>
+  <script src="app.js?v=1788565000000"></script>
 </body>
 </html>
