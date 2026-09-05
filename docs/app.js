@@ -451,6 +451,9 @@ function switchTab(tabId) {
   if (tabId === 'leveling') {
     setTimeout(renderRankCard, 50);
   }
+  if (tabId === 'overview') {
+    loadLivePanel();
+  }
 }
 
 function togglePlugin(pluginName, isEnabled) {
@@ -559,6 +562,15 @@ function autoConnectBridge(cb) {
 }
 
 /* Panel canlı durum kartını güncelle */
+function formatUptime(sec) {
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}g ${h}sa`;
+  if (h > 0) return `${h}sa ${m}dk`;
+  return `${m}dk`;
+}
+
 function loadLivePanel() {
   fetchLiveData((data, err) => {
     const botEl = document.getElementById('liveBotStatus');
@@ -582,6 +594,16 @@ function loadLivePanel() {
     bridgeEl.innerHTML = g && g.bridge
       ? '<span style="color: var(--accent-green);">✅ Kurulu</span>'
       : '<span style="color: var(--accent-amber);">⏳ /panel-bagla bekleniyor</span>';
+
+    // ── GENEL BAKIŞ KARTLARI: GERÇEK VERİLER (demo sayılar artık yok)
+    const oMem = document.getElementById('overviewMembersCount');
+    if (oMem) {
+      oMem.textContent = g ? g.memberCount.toLocaleString('tr-TR') : '—';
+      document.getElementById('overviewRolesCount').textContent = g ? g.roles.toLocaleString('tr-TR') : '—';
+      document.getElementById('overviewChannelsCount').textContent = g ? g.channels.toLocaleString('tr-TR') : '—';
+      document.getElementById('overviewUptime').textContent = formatUptime(data.bot.uptimeSeconds);
+      document.getElementById('overviewPing').textContent = `WebSocket ping: ${data.bot.ping}ms • Son senkron: ${new Date(data.updatedAt).toLocaleTimeString('tr-TR')}`;
+    }
 
     // Gerçek veri geldiyse liderlik tablosunu canlıya çevir
     if (g && g.leaderboard && g.leaderboard.length > 0) {
@@ -742,6 +764,8 @@ function addSongToQueue() {
   const q = input.value.trim();
   if (!q) return;
 
+  const hasBridge = !!getBridgeUrl();
+
   const item = document.createElement('div');
   item.style.cssText = 'background: #14161d; padding: 14px 18px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; animation: toastIn 0.25s ease;';
   item.innerHTML = `
@@ -749,18 +773,25 @@ function addSongToQueue() {
       <span style="font-weight: 800; color: var(--text-dim);">#</span>
       <div>
         <div style="font-weight: 700; color: #fff; font-size: 14px;">${escapeHtml(q)}</div>
-        <div style="font-size: 12px; color: var(--text-dim);">Ekleyen: Siz • Sırada</div>
+        <div style="font-size: 12px; color: ${hasBridge ? 'var(--accent-cyan)' : 'var(--accent-amber)'};">${hasBridge ? 'İstek bot\'a iletildi • köprü kanalını kontrol et' : 'Köprü yok — /panel-bagla ile bağlan'}</div>
       </div>
     </div>
-    <span class="badge-tag badge-blurple">Sırada</span>
+    <span class="badge-tag ${hasBridge ? 'badge-blurple' : ''}" style="${hasBridge ? '' : 'opacity: 0.5;'}">${hasBridge ? 'İletildi' : 'Beklemede'}</span>
   `;
   container.appendChild(item);
   input.value = '';
-  showToast(`"${q}" müzik kuyruğuna eklendi!`, 'success');
+
+  if (hasBridge) {
+    sendBridgePayload({ type: 'music-request', query: q });
+    showToast(`"${q}" isteği vybot'a iletildi!`, 'success');
+  } else {
+    showToast('Köprü kurulu değil. Discord\'da /panel-bagla yaz, sonra tekrar dene.', 'warning');
+  }
 }
 
 /* ==========================================================================
-   9. Akıllı Sohbetçi Asistan Test Konsolu
+   9. Akıllı Sohbetçi Asistan Test Konsolu — GERÇEK KÖPRÜ
+   Soru webhook ile bot'a gider, bot Groq ile cevaplayıp köprü kanalına yazar.
    ========================================================================== */
 function sendAiMessage() {
   const input = document.getElementById('aiTestInput');
@@ -776,18 +807,41 @@ function sendAiMessage() {
     </div>
   `;
   input.value = '';
-  chatBox.scrollTop = chatBox.scrollHeight;
 
-  setTimeout(() => {
+  const url = getBridgeUrl();
+  if (!url) {
     chatBox.innerHTML += `
       <div style="margin-bottom: 10px; text-align: left;">
-        <span style="background: #2b2f3d; color: #fff; padding: 6px 12px; border-radius: 10px; font-size: 13.5px; display: inline-block;">
-          🤖 <b>vybot:</b> Harika bir soru! Sunucunuzda müzik çalmak için ses kanalına geçip <code>/çal [şarkı]</code> yazabilir veya bu panelden istediğiniz şarkıyı aratıp kuyruğa ekleyebilirsiniz!
+        <span style="background: #3d2b2b; color: #ffb4b4; padding: 6px 12px; border-radius: 10px; font-size: 13.5px; display: inline-block;">
+          ⚠️ Köprü henüz kurulmadı. Discord'da <code>/panel-bagla</code> yazıp <b>Otomatik Bağlan</b>'a bas — sonra soruların gerçek vybot AI'ya gider ve cevap köprü kanalına düşer.
         </span>
       </div>
     `;
     chatBox.scrollTop = chatBox.scrollHeight;
-  }, 250);
+    return;
+  }
+
+  chatBox.innerHTML += `
+    <div style="margin-bottom: 10px; text-align: left;">
+      <span style="background: #2b2f3d; color: var(--accent-cyan); padding: 6px 12px; border-radius: 10px; font-size: 13px; display: inline-block;">
+        📡 Sorun gerçek vybot'a iletildi — Groq AI cevabı Discord'daki köprü kanalına düşecek (birkaç saniye içinde orayı kontrol et).
+      </span>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  sendBridgePayload({ type: 'ai-test', question: msg });
+}
+
+/* Köprüye özel JSON payload gönderir (settings.json ekı olarak) */
+function sendBridgePayload(payload) {
+  const url = getBridgeUrl();
+  if (!url) return false;
+  const form = new FormData();
+  form.append('payload_json', JSON.stringify({ username: 'Web Paneli' }));
+  form.append('files[0]', new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), 'payload.json');
+  fetch(url, { method: 'POST', body: form }).catch(() => {});
+  return true;
 }
 
 /* ==========================================================================
