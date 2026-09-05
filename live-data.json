@@ -1,12 +1,12 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-05T15:07:07.930Z",
+  "updatedAt": "2026-09-05T15:11:26.082Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 7801,
+    "uptimeSeconds": 31,
     "guildCount": 1,
-    "ping": 18
+    "ping": 78
   },
   "guilds": {
     "1536835757132751048": {
@@ -18,10 +18,7 @@
       "roles": 2,
       "botOnline": true,
       "settings": {},
-      "bridge": {
-        "webhook_url": "https://discord.com/api/webhooks/1545781960813715556/ZYhGGXaA42cwIYJyt7x-36pHl4GQ_-FHLXj0lIxDgBsyqe2ZsVjuZ8XGwHi-_cYtnH9H",
-        "channel_id": "1536835758877573122"
-      },
+      "bridge": null,
       "leaderboard": []
     }
   }
