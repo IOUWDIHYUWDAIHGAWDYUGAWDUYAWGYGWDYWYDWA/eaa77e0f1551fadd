@@ -1,0 +1,25 @@
+{
+  "version": 3,
+  "updatedAt": "2026-09-05T06:47:34.966Z",
+  "bot": {
+    "username": "Vybot#0084",
+    "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
+    "uptimeSeconds": 31,
+    "guildCount": 1,
+    "ping": 53
+  },
+  "guilds": {
+    "1536835757132751048": {
+      "id": "1536835757132751048",
+      "name": "vybots",
+      "icon": null,
+      "memberCount": 2,
+      "channels": 5,
+      "roles": 2,
+      "botOnline": true,
+      "settings": {},
+      "bridge": null,
+      "leaderboard": []
+    }
+  }
+}
