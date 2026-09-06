@@ -67,6 +67,9 @@ jobs:
             exit 1
           fi
           node decrypt.js "$DECRYPTION_KEY"
+          test -f src/deploy-commands.js
+          test -f src/index.js
+          ls -la src/ | head -n 20
 
       - name: 🚀 Komutları Discord API'ye Güncelle (Deploy)
         env:
