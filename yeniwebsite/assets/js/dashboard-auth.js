@@ -33,6 +33,7 @@ const verifierKey = 'vybot_oauth_verifier';
 const tokenKey = 'vybot_token';
 let accessToken = '';
 let installedGuildIds = new Set();
+let panelApiBase = '';
 
 /* ---------- KALICI OTURUM (localStorage) ---------- */
 function saveToken(data) {
@@ -267,9 +268,63 @@ async function loadServerStats(guildId, guildName) {
     document.querySelector(`[data-coverage="${key}"]`).textContent = value === 1 ? 'Active' : value === 0 ? 'Off' : 'Unknown';
   });
   document.querySelector('[data-coverage="mod_log_channel"]').textContent = guild.settings?.mod_log_channel ? 'Configured' : 'Not set';
+  await loadPanelSettings(guildId, guild.settings || {});
   const activityMarkup = `<div class="activity-item"><i></i><span>Bot telemetry synced</span><time>${data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString() : 'now'}</time></div><div class="activity-item"><i></i><span>${guild.memberCount || 0} members tracked</span><time>Live</time></div><div class="activity-item"><i></i><span>${guild.botOnline ? 'Bot is online and responding' : 'Bot appears offline'}</span><time>Live</time></div>`;
   document.getElementById('server-activity').innerHTML = activityMarkup;
   document.getElementById('server-activity-side').innerHTML = activityMarkup;
+}
+
+async function resolvePanelApi() {
+  if (panelApiBase) return panelApiBase;
+  const configured = config.dashboardApiUrl || config.botApiUrl;
+  if (configured) return String(configured).replace(/\/$/, '');
+  if (!config.tunnelUrl) return '';
+  try {
+    const response = await fetch(config.tunnelUrl, { cache: 'no-store' });
+    const data = await response.json();
+    panelApiBase = data && data.apiUrl ? String(data.apiUrl).replace(/\/$/, '') : '';
+  } catch {
+    panelApiBase = '';
+  }
+  return panelApiBase;
+}
+
+async function loadPanelSettings(guildId, fallback) {
+  const base = await resolvePanelApi();
+  if (!base || !accessToken) return;
+  try {
+    const response = await fetch(`${base}/api/guilds/${encodeURIComponent(guildId)}/settings`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const values = { ...fallback, ...(payload.settings || {}) };
+    document.querySelectorAll('[data-setting]').forEach((input) => {
+      input.checked = values[input.dataset.setting] === true || values[input.dataset.setting] === 1 || values[input.dataset.setting] === '1';
+      input.disabled = false;
+    });
+  } catch {
+    document.querySelectorAll('[data-setting]').forEach((input) => { input.disabled = false; });
+  }
+}
+
+async function savePanelSettings() {
+  const guildId = settings && settings.dataset.guildId;
+  const base = await resolvePanelApi();
+  if (!guildId || !base || !accessToken) {
+    setFeedback('Connect the VYBot bridge before saving server settings.', 'error');
+    return;
+  }
+  const values = {};
+  document.querySelectorAll('[data-setting]').forEach((input) => { values[input.dataset.setting] = input.checked ? '1' : '0'; });
+  const response = await fetch(`${base}/api/guilds/${encodeURIComponent(guildId)}/settings`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(values),
+  });
+  if (!response.ok) throw new Error(`Settings save failed (${response.status}).`);
+  setFeedback('Security settings synchronized with VYBot.', 'success');
 }
 
 function formatUptime(seconds) {
@@ -380,6 +435,9 @@ window.__vybotStartLogin = startLogin;
 logoutButton?.addEventListener('click', logout);
 backButton?.addEventListener('click', closeSettings);
 categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.category)));
+document.getElementById('dash-save')?.addEventListener('click', () => {
+  savePanelSettings().catch((error) => setFeedback(error.message, 'error'));
+});
 
 /* Sayfa yenilendiğinde kalıcı oturum */
 const restored = loadToken();

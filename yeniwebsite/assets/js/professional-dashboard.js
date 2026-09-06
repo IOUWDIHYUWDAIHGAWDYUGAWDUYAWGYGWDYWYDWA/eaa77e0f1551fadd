@@ -97,6 +97,55 @@
 
   function rankCls(i) { return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : ''; }
 
+  function listValue(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function chartPoints(values, color) {
+    const points = listValue(values).map((item) => {
+      if (typeof item === 'number') return item;
+      return Number(item && (item.value ?? item.count ?? item.members ?? item.messages)) || 0;
+    });
+    if (points.length < 2) return '';
+    const max = Math.max(...points, 1);
+    const min = Math.min(...points);
+    const range = Math.max(max - min, 1);
+    const coords = points.map((value, index) => {
+      const x = (index / (points.length - 1)) * 100;
+      const y = 94 - ((value - min) / range) * 78;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(' ');
+    return `<svg class="pro-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Live telemetry history"><polyline points="${coords}" fill="none" stroke="${color || '#55e0a4'}" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>`;
+  }
+
+  function historyFor(guild, keys) {
+    for (const key of keys) {
+      const value = guild && guild[key];
+      if (Array.isArray(value) && value.length > 1) return value;
+    }
+    return [];
+  }
+
+  function historyChart(values, label) {
+    const chart = chartPoints(values, '#55e0a4');
+    return chart || emptyChart(`${label} history is collecting — the next bot sync will add the first points.`);
+  }
+
+  function activityFor(guild) {
+    const values = guild && (guild.activity || guild.recentActivity || guild.events || guild.activityHistory);
+    return Array.isArray(values) ? values.slice(-6).reverse() : [];
+  }
+
+  function activityRows(guild) {
+    const rows = activityFor(guild);
+    if (!rows.length) return '<div class="pro-chart-empty">No activity published yet — waiting for the next telemetry sync.</div>';
+    return rows.map((row) => {
+      const text = typeof row === 'string' ? row : (row.label || row.message || row.type || 'Server activity');
+      const time = typeof row === 'object' && row.timestamp ? new Date(row.timestamp).toLocaleTimeString() : 'Live';
+      return `<div class="pro-activity-row"><span class="pro-activity-icon">•</span><div><strong>${esc(text)}</strong><small>VYBot telemetry</small></div><time>${esc(time)}</time></div>`;
+    }).join('');
+  }
+
   function lbRows(leaderboard, max) {
     const lb = Array.isArray(leaderboard) ? leaderboard.slice(0, max || 6) : [];
     if (!lb.length) {
@@ -203,8 +252,15 @@
       },
       body: JSON.stringify(state.prefs),
     })
-      .then((r) => {
+      .then(async (r) => {
         if (!r.ok) throw new Error('http ' + r.status);
+        const payload = await r.json();
+        if (payload && payload.settings) {
+          const guild = pguild();
+          if (guild) guild.settings = { ...(guild.settings || {}), ...payload.settings };
+          state.prefs = { ...state.prefs, ...payload.settings };
+          savePrefs();
+        }
         if (el) el.setAttribute('data-save-state', 'saved');
       })
       .catch((e) => {
@@ -261,12 +317,12 @@ function overview() {
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Member growth</span><h2>Community growth</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
           <div class="pro-chart-meta"><strong>${members == null ? '—' : fmtN(members)}</strong><span>${members == null ? 'single snapshot, no history yet' : 'current members · single snapshot'}</span></div>
-          <div class="pro-chart-frame">${emptyChart('Member history is not published yet — VYBot telemetry records current snapshots and this page refreshes every 10s.')}</div>
+          <div class="pro-chart-frame">${historyChart(historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']), 'Member')}</div>
         </section>
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Server activity</span><h2>Messages per hour</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
-          <div class="pro-chart-meta"><strong>—</strong><span>message history not published yet</span></div>
-          <div class="pro-chart-frame">${emptyChart('Waiting for message telemetry.')}</div>
+          <div class="pro-chart-meta"><strong>${fmtN((historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']).slice(-1)[0] || {}).value || 0)}</strong><span>messages in latest telemetry window</span></div>
+          <div class="pro-chart-frame">${historyChart(historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']), 'Message')}</div>
         </section>
       </div>
       <div class="pro-lower-grid">
@@ -298,8 +354,8 @@ function analytics() {
         ${metric('Voice Minutes', '—', false, '◉')}
       </div>
       <div class="pro-chart-grid">
-        <section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth</h2><button class="pro-select" type="button">Live snapshot⌄</button></div><div class="pro-chart-frame">${emptyChart('Historical growth is not published yet. This chart activates when VYBot telemetry records history.')}</div></section>
-        <section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2></div><div class="pro-chart-frame">${emptyChart('Message history is not published yet.')}</div></section>
+        <section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth</h2><span class="pro-live-chip">Live history</span></div><div class="pro-chart-frame">${historyChart(historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']), 'Member')}</div></section>
+        <section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2><span class="pro-live-chip">Live history</span></div><div class="pro-chart-frame">${historyChart(historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']), 'Message')}</div></section>
       </div>`;
   }
 
@@ -312,7 +368,8 @@ function analytics() {
     // kullanıcı değiştirirse localStorage'daki tercih kazanır.
     const val = (key) => (key in prefs ? prefs[key] : settings[key] != null ? String(settings[key]) : '');
 
-    const sw = (key, label, desc) => toggleHTML(key, label, desc, val(key) === '1');
+    const isOn = (value) => value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
+    const sw = (key, label, desc) => toggleHTML(key, label, desc, isOn(val(key)));
     const guildLabel = guild ? esc(guild.name) : 'No server connected';
     const editNote = cfg.dashboardApiUrl
       ? 'Değişiklikler sunucuya gönderilir.'
@@ -338,8 +395,10 @@ function analytics() {
       <section class="pro-card pro-pref-card" data-pref-group>
         <div class="pro-card-head"><h2>✨ Modules</h2><small>Which VYBot systems are active</small></div>
         ${sw('leveling_enabled', 'Leveling & XP', 'Grant XP per message, ranks and level roles')}
+        ${sw('leaderboard_enabled', 'Community leaderboard', 'Publish XP rankings in the dashboard and bot commands')}
         ${sw('economy_enabled', 'Economy', 'Balances, daily and daily rewards')}
         ${sw('welcome_enabled', 'Welcome', 'Welcome messages for new members')}
+        ${sw('activity_tracking_enabled', 'Activity telemetry', 'Record message and member history for analytics')}
         ${sw('log_enabled', 'Moderation logging', 'Record moderation events (/modlog)')}
       </section>
 
@@ -353,6 +412,8 @@ function analytics() {
         <div class="pro-card-head"><h2>✓ General</h2><small>Server-wide behavior</small></div>
         ${sw('auto_role_enabled', 'Auto role', 'Assign a role on join (/otorol)')}
         ${sw('mod_log_enabled', 'Mod-log channel', 'Audit log for staff actions')}
+        ${sw('ticket_enabled', 'Ticket system', 'Enable private support ticket workflows')}
+        ${sw('giveaway_enabled', 'Giveaways', 'Enable scheduled community giveaways')}
       </section>
 
       <div class="pro-save-note">${editNote}</div>`;
@@ -360,7 +421,7 @@ function analytics() {
 
   function genericView(title, eyebrow, description, rows) {
     return `
-      <div class="pro-view-heading"><div><span class="pro-eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(description)}</p></div><button class="pro-button primary" type="button">Configure</button></div>
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(description)}</p></div><button class="pro-button primary" type="button" data-open-settings="1">Configure</button></div>
       <div class="pro-data-grid">${rows.map((r) => `<section class="pro-card pro-data-card"><span class="pro-data-icon">${r[0]}</span><div><h2>${esc(r[1])}</h2><p>${esc(r[2])}</p></div><strong>${esc(r[3])}</strong></section>`).join('')}</div>`;
   }
 const MODULE_VIEWS = {
@@ -422,9 +483,7 @@ function contentFor(rootEl) {
       ? `<div class="pro-guild-list">${list.map((g) => `<button class="pro-guild-chip ${guild && String(g.id) === String(guild.id) ? 'active' : ''}" type="button" data-guild-id="${esc(g.id)}">${esc(g.name)}</button>`).join('')}</div>`
       : '';
 
-    const activity = leaderboard.length
-      ? leaderboard.slice(0, 5).map((m, i) => `<div class="pro-member-row ${rankCls(i)}"><b>#${i + 1}</b><em>Lv ${m.level || 0}</em><span>${esc(m.name || 'Unknown')}</span><strong>${fmtN(m.xp)} XP</strong></div>`).join('')
-      : '<div class="pro-chart-empty">No activity published yet.</div>';
+    const activity = activityRows(guild);
 
     const userLabel = state.user ? (state.user.global_name || state.user.username || 'Connected') : null;
     const userButton = userLabel
@@ -464,8 +523,19 @@ function contentFor(rootEl) {
     root.querySelectorAll('[data-guild-id]').forEach((button) =>
       button.addEventListener('click', () => {
         state.guildId = button.dataset.guildId;
+        loadPrefs();
         render();
+        syncGuildSettings();
       })
+    );
+    root.querySelectorAll('[data-open-settings]').forEach((button) =>
+    button.addEventListener('click', () => {
+      state.view = 'settings';
+      const url = new URL(location.href);
+      url.searchParams.set('view', 'settings');
+      history.pushState({}, '', url);
+      render();
+    })
     );
 
     /* ---------- interaktif ayarlar ---------- */
@@ -489,6 +559,26 @@ function contentFor(rootEl) {
       };
       update();
       new MutationObserver(update).observe(saveBanner, { attributes: true, attributeFilter: ['data-save-state'] });
+    }
+  }
+
+  async function syncGuildSettings() {
+    const guild = pguild();
+    const token = discordAccessToken();
+    const base = apiBase();
+    if (!guild || !guild.id || !token || !base) return;
+    try {
+      const response = await fetch(`${base}/api/guilds/${encodeURIComponent(guild.id)}/settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!payload || !payload.settings) return;
+      guild.settings = { ...(guild.settings || {}), ...payload.settings };
+      if (state.view === 'settings') render();
+    } catch {
+      // Public telemetry remains usable when the optional settings bridge is offline.
     }
   }
 
@@ -521,6 +611,27 @@ function contentFor(rootEl) {
           state.loading = false;
           state.error = false;
           render();
+          syncGuildSettings();
+        }
+
+        async function syncGuildSettings() {
+          const guild = pguild();
+          const token = discordAccessToken();
+          const base = apiBase();
+          if (!guild || !guild.id || !token || !base) return;
+          try {
+            const response = await fetch(`${base}/api/guilds/${encodeURIComponent(guild.id)}/settings`, {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: 'no-store',
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            if (!payload || !payload.settings) return;
+            guild.settings = { ...(guild.settings || {}), ...payload.settings };
+            if (state.view === 'settings') render();
+          } catch {
+            // Public telemetry remains usable when the optional settings bridge is offline.
+          }
         }
       })
       .catch(() => {
@@ -545,6 +656,7 @@ function contentFor(rootEl) {
   window.addEventListener('vybot:auth-user', (event) => {
     state.user = event.detail || null;
     render();
+    syncGuildSettings();
   });
 
   render();
