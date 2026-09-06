@@ -17,8 +17,64 @@ const childGuildId = new URLSearchParams(window.location.search).get('guild');
 const childMode = Boolean(childGuildId && window.opener);
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
+const tokenKey = 'vybot_token';
 let accessToken = '';
 let installedGuildIds = new Set();
+
+/* ---------- KALICI OTURUM (localStorage) ---------- */
+function saveToken(data) {
+  if (!data || !data.access_token) return;
+  const store = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || null,
+    expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : Date.now() + 604800 * 1000,
+  };
+  localStorage.setItem(tokenKey, JSON.stringify(store));
+}
+
+function loadToken() {
+  try {
+    const raw = localStorage.getItem(tokenKey);
+    if (!raw) return null;
+    const store = JSON.parse(raw);
+    if (!store || !store.access_token) return null;
+    if (store.expires_at && store.expires_at < Date.now()) {
+      if (store.refresh_token) return refreshToken(store.refresh_token);
+      localStorage.removeItem(tokenKey);
+      return null;
+    }
+    return store.access_token;
+  } catch (_) {
+    localStorage.removeItem(tokenKey);
+    return null;
+  }
+}
+
+async function refreshToken(refreshTokenValue) {
+  try {
+    const body = new URLSearchParams({
+      client_id: config.clientId,
+      grant_type: 'refresh_token',
+      refresh_token: refreshTokenValue,
+    });
+    const res = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!res.ok) throw new Error('refresh failed');
+    const data = await res.json();
+    saveToken(data);
+    return data.access_token;
+  } catch (_) {
+    localStorage.removeItem(tokenKey);
+    return null;
+  }
+}
+
+function clearToken() {
+  localStorage.removeItem(tokenKey);
+}
 
 function setFeedback(message, type = '') {
   if (!feedback) return;
@@ -246,6 +302,7 @@ async function completeLogin() {
   setFeedback('Connecting to Discord...', 'loading');
   const token = await exchangeCode(code);
   accessToken = token.access_token;
+  saveToken(token);
   sessionStorage.removeItem(stateKey);
   sessionStorage.removeItem(verifierKey);
 
@@ -267,7 +324,7 @@ async function completeLogin() {
   document.body.classList.add('dashboard-authenticated');
   session.hidden = false;
   loginButton.hidden = true;
-  setFeedback('Connected securely. Your access token stays in memory only.', 'success');
+  setFeedback('Connected securely. Your session is remembered on this device.', 'success');
   return true;
 }
 
@@ -297,6 +354,7 @@ function enterChildMode() {
 
 function logout() {
   accessToken = '';
+  clearToken();
   document.body.classList.remove('dashboard-authenticated');
   session.hidden = true;
   loginButton.hidden = false;
@@ -309,6 +367,26 @@ window.__vybotStartLogin = startLogin;
 logoutButton?.addEventListener('click', logout);
 backButton?.addEventListener('click', closeSettings);
 categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.category)));
+
+/* Sayfa yenilendiğinde kalıcı oturum */
+const restored = loadToken();
+if (restored) {
+  accessToken = restored;
+  discordRequest('/users/@me').then((user) => {
+    userName.textContent = user.global_name || user.username;
+    window.dispatchEvent(new CustomEvent('vybot:auth-user', { detail: user }));
+    discordRequest('/users/@me/guilds').then((guilds) => {
+      const manageableGuilds = guilds
+        .filter((g) => (BigInt(g.permissions || '0') & 0x20n) === 0x20n || (BigInt(g.permissions || '0') & 0x8n) === 0x8n)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      renderGuilds(manageableGuilds);
+      document.body.classList.add('dashboard-authenticated');
+      session.hidden = false;
+      loginButton.hidden = true;
+      setFeedback('Session restored. Still you.', 'success');
+    }).catch(() => {});
+  }).catch(() => {});
+}
 
 enterChildMode();
 completeLogin().catch((error) => {

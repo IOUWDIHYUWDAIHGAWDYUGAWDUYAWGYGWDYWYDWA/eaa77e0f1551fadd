@@ -32,4 +32,8 @@ window.VYBOT_CONFIG = {
 
   // Server-side panel API'si hazır olduğunda burada kullanılacak.
   dashboardApiUrl: '',
-};
+
+  // Bot HTTP API — dashboard ayarları buraya POST eder (http://BOT_IP:PORT)
+  // NOT: GitHub Actions runner dışarıdan erişilemez. Bot'a ayrı hostinge (VPS/Railway/Fly.io) taşınmalı.
+  botApiUrl: '',
+  apiToken: '',

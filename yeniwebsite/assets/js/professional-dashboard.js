@@ -156,17 +156,22 @@
     savePrefs();
     const el = rootEl.querySelector('[data-save-state]');
     if (el) el.setAttribute('data-save-state', 'saved');
-    const api = cfg.dashboardApiUrl;
-    if (api) {
-      const g = pguild();
-      try {
-        fetch(api + (g ? '/' + g.id : ''), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(state.prefs),
-        }).catch(() => {});
-      } catch (_) { /* yoksay */ }
-    }
+    // Bot HTTP API'ye direkt POST — site bottan veri ister, bot verir
+    const apiBase = cfg.botApiUrl;
+    if (!apiBase) return;
+    const g = pguild();
+    const guildId = g && g.id ? g.id : 'default';
+    const token = cfg.apiToken || '';
+    fetch(`${apiBase.replace(/\/$/, '')}/api/guilds/${guildId}/settings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-vybot-token': token,
+      },
+      body: JSON.stringify(state.prefs),
+    })
+      .then((r) => { if (!r.ok) console.warn('[VYBot] Bot API hatası:', r.status); })
+      .catch((e) => console.warn('[VYBot] Bot API erişilemedi:', e.message));
   }
 
   function nav() {
