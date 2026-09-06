@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.5">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.6">
 </head>
 <body>
 
@@ -85,25 +85,34 @@
 
     <section class="settings-workspace" id="dash-settings" hidden>
       <div class="container">
-        <div class="settings-head">
-          <div>
-            <span class="eyebrow">Server settings</span>
-            <h2 class="title" id="dash-settings-title">Security controls</h2>
-            <p class="lead">Control the protection modules for this server from one place.</p>
+        <div class="panel-shell">
+          <aside class="panel-sidebar">
+            <div class="panel-server"><span class="panel-server-mark">V</span><span><strong id="panel-server-name">vybots</strong><small>Server control</small></span></div>
+            <button class="panel-back" id="dash-back" type="button">← All servers</button>
+            <nav class="panel-nav" aria-label="Dashboard categories">
+              <button class="panel-nav-item active" type="button" data-category="security"><span>◈</span> Security</button>
+              <button class="panel-nav-item" type="button" data-category="moderation"><span>◒</span> Moderation<em>Soon</em></button>
+              <button class="panel-nav-item" type="button" data-category="leveling"><span>⌁</span> Leveling<em>Soon</em></button>
+              <button class="panel-nav-item" type="button" data-category="economy"><span>◌</span> Economy<em>Soon</em></button>
+              <button class="panel-nav-item" type="button" data-category="welcome"><span>✦</span> Welcome<em>Soon</em></button>
+              <button class="panel-nav-item" type="button" data-category="tickets"><span>□</span> Tickets<em>Soon</em></button>
+            </nav>
+          </aside>
+          <div class="panel-main">
+            <div class="settings-head">
+              <div><span class="eyebrow">Server settings</span><h2 class="title" id="dash-settings-title">Security</h2><p class="lead" id="dash-settings-lead">Protect your community with clear, focused controls.</p></div>
+              <span class="panel-live"><i></i>Connected</span>
+            </div>
+            <div class="settings-notice"><strong>Dashboard API required to save</strong><span>The controls are ready. Saving will be enabled when the secure VYBot panel API is connected.</span></div>
+            <div class="settings-grid">
+              <label class="setting-row"><span><strong>Anti-Nuke</strong><small>Block unauthorized channel and role deletion.</small></span><input type="checkbox" data-setting="anti_nuke" disabled></label>
+              <label class="setting-row"><span><strong>Anti-Link</strong><small>Block advertising and invite links.</small></span><input type="checkbox" data-setting="anti_link" disabled></label>
+              <label class="setting-row"><span><strong>Anti-Swear</strong><small>Filter configured Turkish swear words.</small></span><input type="checkbox" data-setting="anti_swear" disabled></label>
+              <label class="setting-row"><span><strong>Anti-Spam</strong><small>Detect flood and repeated messages.</small></span><input type="checkbox" data-setting="anti_spam" disabled></label>
+            </div>
+            <button class="btn btn-primary" id="dash-save" type="button" disabled>Save security settings</button>
           </div>
-          <button class="btn btn-ghost" id="dash-back" type="button">Back to servers</button>
         </div>
-        <div class="settings-notice">
-          <strong>Dashboard connection required</strong>
-          <span>These controls are ready, but saving needs the VYBot panel API. The bot will never show a fake “saved” message.</span>
-        </div>
-        <div class="settings-grid">
-          <label class="setting-row"><span><strong>Anti-Nuke</strong><small>Block unauthorized channel and role deletion.</small></span><input type="checkbox" data-setting="anti_nuke" disabled></label>
-          <label class="setting-row"><span><strong>Anti-Link</strong><small>Block advertising and invite links.</small></span><input type="checkbox" data-setting="anti_link" disabled></label>
-          <label class="setting-row"><span><strong>Anti-Swear</strong><small>Filter configured Turkish swear words.</small></span><input type="checkbox" data-setting="anti_swear" disabled></label>
-          <label class="setting-row"><span><strong>Anti-Spam</strong><small>Detect flood and repeated messages.</small></span><input type="checkbox" data-setting="anti_spam" disabled></label>
-        </div>
-        <button class="btn btn-primary" id="dash-save" type="button" disabled>Save security settings</button>
       </div>
     </section>
 
@@ -210,7 +219,7 @@
   <script src="../assets/js/data/config.js"></script>
   <script src="../assets/js/data/i18n.js"></script>
   <script type="module" src="../assets/js/ui.js"></script>
-  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.2"></script>
+  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.3"></script>
 </body>
 </html>
 

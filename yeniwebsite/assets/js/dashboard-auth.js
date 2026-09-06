@@ -8,6 +8,9 @@ const guildsElement = document.getElementById('dash-guilds');
 const settings = document.getElementById('dash-settings');
 const settingsTitle = document.getElementById('dash-settings-title');
 const backButton = document.getElementById('dash-back');
+const panelServerName = document.getElementById('panel-server-name');
+const categoryButtons = document.querySelectorAll('[data-category]');
+const settingsLead = document.getElementById('dash-settings-lead');
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 let accessToken = '';
@@ -146,9 +149,24 @@ function renderGuilds(guilds) {
 function openSettings(guildId, guildName) {
   if (!settings) return;
   settingsTitle.textContent = `${guildName} security`;
+  panelServerName.textContent = guildName;
   settings.dataset.guildId = guildId;
   settings.hidden = false;
   settings.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectCategory(category) {
+  const copy = {
+    security: ['Security', 'Protect your community with clear, focused controls.'],
+    moderation: ['Moderation', 'Moderation controls will be available in the next panel release.'],
+    leveling: ['Leveling', 'Configure XP, ranks and reward roles from this workspace.'],
+    economy: ['Economy', 'Manage member rewards and the server economy here.'],
+    welcome: ['Welcome', 'Design your welcome flow and automatic roles here.'],
+    tickets: ['Tickets', 'Configure private support channels and staff access here.'],
+  }[category] || ['Security', 'Protect your community with clear, focused controls.'];
+  settingsTitle.textContent = copy[0];
+  settingsLead.textContent = copy[1];
+  categoryButtons.forEach((button) => button.classList.toggle('active', button.dataset.category === category));
 }
 
 function closeSettings() {
@@ -207,6 +225,7 @@ function logout() {
 loginButton?.addEventListener('click', startLogin);
 logoutButton?.addEventListener('click', logout);
 backButton?.addEventListener('click', closeSettings);
+categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.category)));
 
 completeLogin().catch((error) => {
   accessToken = '';
