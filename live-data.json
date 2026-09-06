@@ -1,23 +1,37 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-06T16:53:47.958Z",
+  "updatedAt": "2026-09-06T16:54:47.962Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 661,
+    "uptimeSeconds": 721,
     "guildCount": 1,
-    "ping": 78
+    "ping": 77
   },
   "guilds": {
     "1536835757132751048": {
       "id": "1536835757132751048",
       "name": "vybots",
       "icon": null,
-      "memberCount": 2,
+      "memberCount": 3,
       "channels": 5,
-      "roles": 2,
+      "roles": 3,
       "botOnline": true,
-      "settings": {},
+      "settings": {
+        "guild_id": "1536835757132751048",
+        "mod_log_channel": null,
+        "welcome_channel": null,
+        "welcome_message": "Sunucumuza hoş geldin {user}!",
+        "leave_channel": null,
+        "autorole_id": null,
+        "verify_role_id": null,
+        "verify_channel_id": null,
+        "anti_nuke": 1,
+        "anti_link": 1,
+        "anti_swear": 1,
+        "anti_spam": 1,
+        "level_system": 1
+      },
       "bridge": null,
       "leaderboard": []
     }
