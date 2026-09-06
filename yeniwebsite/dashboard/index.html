@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.9">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.1.0">
 </head>
 <body>
 
@@ -90,7 +90,8 @@
             <div class="panel-server"><span class="panel-server-mark">V</span><span><strong id="panel-server-name">vybots</strong><small>Server control</small></span></div>
             <button class="panel-back" id="dash-back" type="button">← All servers</button>
             <nav class="panel-nav" aria-label="Dashboard categories">
-              <button class="panel-nav-item active" type="button" data-category="security"><span>◈</span> Security</button>
+              <button class="panel-nav-item active" type="button" data-category="overview"><span>◉</span> Overview</button>
+              <button class="panel-nav-item" type="button" data-category="security"><span>◈</span> Security</button>
               <button class="panel-nav-item" type="button" data-category="moderation"><span>◒</span> Moderation<em>Soon</em></button>
               <button class="panel-nav-item" type="button" data-category="leveling"><span>⌁</span> Leveling<em>Soon</em></button>
               <button class="panel-nav-item" type="button" data-category="economy"><span>◌</span> Economy<em>Soon</em></button>
@@ -104,7 +105,12 @@
               <div class="server-stat"><span>Members</span><strong data-stat="memberCount">--</strong><small>community size</small></div>
               <div class="server-stat"><span>Channels</span><strong data-stat="channels">--</strong><small>active channels</small></div>
               <div class="server-stat"><span>Roles</span><strong data-stat="roles">--</strong><small>server roles</small></div>
+              <div class="server-stat"><span>Latency</span><strong class="stat-online" data-stat="ping">--</strong><small>Discord gateway</small></div>
               <div class="server-stat"><span>Bot status</span><strong class="stat-online" data-stat="bot">--</strong><small data-stat="updated">waiting for live data</small></div>
+            </div>
+            <div class="dashboard-overview-grid">
+              <section class="overview-card chart-card"><div class="overview-card-head"><div><span class="eyebrow">Telemetry</span><h3>Server activity</h3></div><span class="live-chip"><i></i>Live</span></div><div class="chart-empty"><div class="chart-grid-lines"></div><strong>Historical activity is collecting</strong><span>Charts will appear after the bot records more telemetry.</span></div></section>
+              <section class="overview-card leaderboard-card"><div class="overview-card-head"><div><span class="eyebrow">Community</span><h3>Top members</h3></div><span class="live-chip">Live XP</span></div><div id="server-leaderboard" class="leaderboard-list"><div class="activity-empty">No ranking data yet.</div></div></section>
             </div>
             <div class="overview-grid">
               <section class="overview-card activity-card">
@@ -121,8 +127,9 @@
                 </div>
               </section>
             </div>
+            <div class="settings-panel" id="settings-panel" hidden>
             <div class="settings-head">
-              <div><span class="eyebrow">Server settings</span><h2 class="title" id="dash-settings-title">Security</h2><p class="lead" id="dash-settings-lead">Protect your community with clear, focused controls.</p></div>
+              <div><span class="eyebrow">Server settings</span><h2 class="title" id="dash-settings-title">Overview</h2><p class="lead" id="dash-settings-lead">Your server at a glance. Choose a category from the navigation to manage it.</p></div>
               <span class="panel-live"><i></i>Connected</span>
             </div>
             <div class="settings-notice"><strong>Dashboard API required to save</strong><span>The controls are ready. Saving will be enabled when the secure VYBot panel API is connected.</span></div>
@@ -133,6 +140,7 @@
               <label class="setting-row"><span><strong>Anti-Spam</strong><small>Detect flood and repeated messages.</small></span><input type="checkbox" data-setting="anti_spam" disabled></label>
             </div>
             <button class="btn btn-primary" id="dash-save" type="button" disabled>Save security settings</button>
+            </div>
           </div>
           <aside class="panel-health-rail">
             <div class="health-card"><div class="health-card-head"><strong>Server health</strong><span>Live</span></div><div class="health-row"><span><i class="health-dot"></i> Bot status</span><strong data-stat="health-bot">--</strong></div><div class="health-row"><span><i class="health-dot"></i> API status</span><strong>Operational</strong></div><div class="health-row"><span><i class="health-dot"></i> Latency</span><strong data-stat="ping">--</strong></div><div class="health-row"><span><i class="health-dot"></i> Uptime</span><strong data-stat="uptime">--</strong></div></div>
@@ -245,7 +253,7 @@
   <script src="../assets/js/data/config.js"></script>
   <script src="../assets/js/data/i18n.js"></script>
   <script type="module" src="../assets/js/ui.js"></script>
-  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.6"></script>
+  <script type="module" src="../assets/js/dashboard-auth.js?v=1.1.0"></script>
 </body>
 </html>
 

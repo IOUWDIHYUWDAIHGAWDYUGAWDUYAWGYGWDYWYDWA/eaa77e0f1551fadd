@@ -11,6 +11,7 @@ const backButton = document.getElementById('dash-back');
 const panelServerName = document.getElementById('panel-server-name');
 const categoryButtons = document.querySelectorAll('[data-category]');
 const settingsLead = document.getElementById('dash-settings-lead');
+const settingsPanel = document.getElementById('settings-panel');
 const stats = document.getElementById('server-stats');
 const childGuildId = new URLSearchParams(window.location.search).get('guild');
 const childMode = Boolean(childGuildId && window.opener);
@@ -150,7 +151,7 @@ function renderGuilds(guilds) {
 }
 
 function openGuildWindow(guildId) {
-  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=625defb`, '_blank', 'popup,width=1280,height=900,resizable=yes,scrollbars=yes');
+  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=f7d2c99`, '_blank', 'popup,width=1440,height=960,resizable=yes,scrollbars=yes');
   if (!child) {
     setFeedback('Allow pop-ups to open the server dashboard.', 'error');
     return;
@@ -187,6 +188,10 @@ async function loadServerStats(guildId, guildName) {
   document.querySelector('[data-stat="health-bot"]').textContent = guild.botOnline ? 'Online' : 'Offline';
   document.querySelector('[data-stat="ping"]').textContent = data.bot?.ping >= 0 ? `${data.bot.ping} ms` : '--';
   document.querySelector('[data-stat="uptime"]').textContent = data.bot?.uptimeSeconds ? formatUptime(data.bot.uptimeSeconds) : '--';
+  const leaderboard = guild.leaderboard || [];
+  document.getElementById('server-leaderboard').innerHTML = leaderboard.length
+    ? leaderboard.slice(0, 5).map((member, index) => `<div class="leaderboard-row"><b>${index + 1}</b><span>${escapeHtml(member.name || 'Unknown')}</span><small>Level ${member.level || 0}</small><strong>${Number(member.xp || 0).toLocaleString('en-US')} XP</strong></div>`).join('')
+    : '<div class="activity-empty">No ranking data yet.</div>';
   ['anti_nuke', 'anti_link', 'anti_spam'].forEach((key) => {
     const value = guild.settings?.[key];
     document.querySelector(`[data-coverage="${key}"]`).textContent = value === 1 ? 'Active' : value === 0 ? 'Off' : 'Unknown';
@@ -206,6 +211,7 @@ function formatUptime(seconds) {
 
 function selectCategory(category) {
   const copy = {
+    overview: ['Overview', 'Your server at a glance. Choose a category from the navigation to manage it.'],
     security: ['Security', 'Protect your community with clear, focused controls.'],
     moderation: ['Moderation', 'Moderation controls will be available in the next panel release.'],
     leveling: ['Leveling', 'Configure XP, ranks and reward roles from this workspace.'],
@@ -215,6 +221,7 @@ function selectCategory(category) {
   }[category] || ['Security', 'Protect your community with clear, focused controls.'];
   settingsTitle.textContent = copy[0];
   settingsLead.textContent = copy[1];
+  if (settingsPanel) settingsPanel.hidden = category !== 'security';
   categoryButtons.forEach((button) => button.classList.toggle('active', button.dataset.category === category));
 }
 
