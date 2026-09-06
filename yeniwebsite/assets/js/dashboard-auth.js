@@ -262,6 +262,7 @@ async function completeLogin() {
     .sort((left, right) => left.name.localeCompare(right.name));
 
   userName.textContent = user.global_name || user.username;
+  window.dispatchEvent(new CustomEvent('vybot:auth-user', { detail: user }));
   renderGuilds(manageableGuilds);
   document.body.classList.add('dashboard-authenticated');
   session.hidden = false;
@@ -304,6 +305,7 @@ function logout() {
 }
 
 loginButton?.addEventListener('click', startLogin);
+window.__vybotStartLogin = startLogin;
 logoutButton?.addEventListener('click', logout);
 backButton?.addEventListener('click', closeSettings);
 categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.category)));

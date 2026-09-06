@@ -1,14 +1,14 @@
 /**
- * VYBot — Professional Dashboard (GERÇEK VERİ)
+ * VYBot — Professional Dashboard (GERÇEK VERİ + İŞLEVSEL)
  * ---------------------------------------------------------------------------
- * Tüm istatistikler canlı telemetriden gelir. Bot, her 5 dakikada bir
- * src/utils/liveDataSync.js ile "live-data" dalındaki live-data.json dosyasına
- * GERÇEK sunucu verisi yazar (üye sayısı, kanal/rol sayıları, ping, uptime,
- * liderlik tablosu …). Bu sayfa o dosyayı okur ve Discord OAuth verisini de
- * ("vybot:server-data" olayı) dinler.
- *
- * KURAL (Masterprompt 26 — Real Data Rule): Sahte sayı ASLA gösterilmez.
- * Veri yoksa "—" ve dürüst boş durum gösterilir.
+ * Tüm istatistikler canlı telemetriden gelir. Bot, src/utils/liveDataSync.js ile
+ * "live-data" dalındaki live-data.json dosyasına GERÇEK sunucu verisi yazar.
+ * Bu sayfa:
+ *   • Canlı veriyi HER 10 SANİYEDE bir otomatik yeniler (sessiz polling)
+ *   • Discord OAuth açıksa sağ üstte gerçek kullanıcı adını gösterir
+ *   • Settings bölümünde GERÇEKTEN açılıp kapanan toggle'lar + kaydetme vardır
+ *     (tarayıcıda saklanır; dashboardApiUrl dolarsa sunucuya POST eder)
+ * KURAL (Masterprompt 26): Sahte sayı ASLA gösterilmez.
  */
 (() => {
   'use strict';
@@ -30,8 +30,11 @@
     guildId: null,
     live: null,   // live-data.json yükü
     auth: null,   // vybot:server-data (Discord OAuth child mode)
+    user: null,   // vybot:auth-user (Discord OAuth kullanıcısı)
+    prefs: {},    // tarayıcıda saklanan kullanıcı tercihleri (guildId'e göre)
     loading: true,
     error: false,
+    lastKey: '',  // son render anahtarı — sessiz yenileme veri değişmeden render atlamaz
   };
 
   /* ---------- yardımcılar ---------- */
@@ -101,6 +104,71 @@
     return lb.map((m, i) => `<div class="pro-member-row ${rankCls(i)}"><b>#${i + 1}</b><em>Lv ${m.level || 0}</em><span>${esc(m.name || 'Unknown')}</span><strong>${fmtN(m.xp)} XP</strong></div>`).join('');
   }
 
+  /* ---------- tercihler (localStorage) ---------- */
+  function prefsKey() {
+    const g = pguild();
+    return 'vybot_prefs_' + (g && g.id ? String(g.id) : 'default');
+  }
+
+  function loadPrefs() {
+    try { state.prefs = JSON.parse(localStorage.getItem(prefsKey()) || '{}') || {}; }
+    catch (_) { state.prefs = {}; }
+    return state.prefs;
+  }
+
+  function savePrefs() {
+    try { localStorage.setItem(prefsKey(), JSON.stringify(state.prefs)); }
+    catch (_) { /* yoksay — çerez engelli ortam */ }
+  }
+
+  /* ---------- toggle yardımcıları ---------- */
+  function toggleHTML(key, label, desc, checked) {
+    const id = 'pro-pref-' + key.replace(/[^a-z0-9]/gi, '-');
+    return `<label class="pro-toggle-row" for="${id}">
+      <span class="pro-toggle"><input type="checkbox" id="${id}" data-pref="${esc(key)}" ${checked ? 'checked' : ''}><i></i></span>
+      <span class="pro-toggle-text"><strong>${esc(label)}</strong>${desc ? `<small>${esc(desc)}</small>` : ''}</span>
+    </label>`;
+  }
+
+  function bindToggles(rootEl) {
+    rootEl.querySelectorAll('[data-pref]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const key = input.dataset.pref;
+        if (input.type === 'checkbox') state.prefs[key] = input.checked ? '1' : '0';
+        else state.prefs[key] = input.value;
+        input.closest('[data-pref-group]')?.classList.add('dirty');
+        rootEl.querySelector('[data-save-state]')?.setAttribute('data-save-state', 'dirty');
+      });
+    });
+    rootEl.querySelectorAll('[data-toggle-all]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const on = btn.dataset.toggleAll === '1';
+        rootEl.querySelectorAll('input[data-pref][type="checkbox"]').forEach((cb) => {
+          cb.checked = on;
+          state.prefs[cb.dataset.pref] = on ? '1' : '0';
+        });
+        rootEl.querySelector('[data-save-state]')?.setAttribute('data-save-state', 'dirty');
+      })
+    );
+  }
+
+  function saveNow(rootEl) {
+    savePrefs();
+    const el = rootEl.querySelector('[data-save-state]');
+    if (el) el.setAttribute('data-save-state', 'saved');
+    const api = cfg.dashboardApiUrl;
+    if (api) {
+      const g = pguild();
+      try {
+        fetch(api + (g ? '/' + g.id : ''), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state.prefs),
+        }).catch(() => {});
+      } catch (_) { /* yoksay */ }
+    }
+  }
+
   function nav() {
     const items = [
       ['overview', 'Overview'], ['analytics', 'Analytics'], ['moderation', 'Moderation'],
@@ -149,7 +217,7 @@ function overview() {
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Member growth</span><h2>Community growth</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
           <div class="pro-chart-meta"><strong>${members == null ? '—' : fmtN(members)}</strong><span>${members == null ? 'single snapshot, no history yet' : 'current members · single snapshot'}</span></div>
-          <div class="pro-chart-frame">${emptyChart('Member history is not published yet — VYBot telemetry records current snapshots every 5 minutes.')}</div>
+          <div class="pro-chart-frame">${emptyChart('Member history is not published yet — VYBot telemetry records current snapshots and this page refreshes every 10s.')}</div>
         </section>
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Server activity</span><h2>Messages per hour</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
@@ -191,20 +259,59 @@ function analytics() {
       </div>`;
   }
 
-  function settingsView() {
+  function settingsView(rootEl) {
     const guild = pguild();
-    const guildName = (guild && guild.name) || 'No server connected';
-    const rows = [
-      ['Command prefix', 'Slash commands — no prefix needed', '/'],
-      ['Default language', 'Matches each user', 'Auto (TR / EN)'],
-      ['Mod-log channel', 'Set with /modlog', '—'],
-      ['Security guards', 'Anti-nuke, anti-link, anti-swear, anti-spam', 'Available'],
-      ['Leveling engine', 'XP, ranks and level roles', 'Available'],
-      ['Economy engine', 'Balance, daily and leaderboard', 'Available'],
-    ];
+    const guildId = guild && guild.id ? String(guild.id) : null;
+    const settings = (guild && guild.settings) || {};
+    const prefs = loadPrefs();
+    // Botun gerçek ayarları toggle'ların BAŞLANGIÇ durumunu belirler;
+    // kullanıcı değiştirirse localStorage'daki tercih kazanır.
+    const val = (key) => (key in prefs ? prefs[key] : settings[key] != null ? String(settings[key]) : '');
+
+    const sw = (key, label, desc) => toggleHTML(key, label, desc, val(key) === '1');
+    const guildLabel = guild ? esc(guild.name) : 'No server connected';
+    const editNote = cfg.dashboardApiUrl
+      ? 'Değişiklikler sunucuya gönderilir.'
+      : 'Değişiklikler bu tarayıcıda saklanır. Sunucuya kalıcı uygulamak için Discord’da /panel-bagla komutunu kullanın.';
+
     return `
-      <div class="pro-view-heading"><div><span class="pro-eyebrow">Settings</span><h1>Server configuration</h1><p>Manage VYBot behavior for ${esc(guildName)}.</p></div><button class="pro-button primary" type="button">Open Panel</button></div>
-      <div class="pro-settings-grid">${rows.map(([h, d, v], i) => `<section class="pro-card pro-setting-card"><span class="pro-eyebrow">Setting ${i + 1}</span><h2>${esc(h)}</h2><p>${esc(d)}</p><strong>${esc(v)}</strong><button class="pro-button ghost" type="button">Edit</button></section>`).join('')}</div>`;
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">Settings</span><h1>Configure ${guildLabel}</h1><p>Toggle VYBot modules, security guards, leveling, economy and more.</p></div>
+        <div class="pro-heading-actions">
+          <button class="pro-button ghost" type="button" data-toggle-all="1">Enable all</button>
+          <button class="pro-button ghost" type="button" data-toggle-all="0">Disable all</button>
+          <button class="pro-button primary" type="button" data-save="1">💾 Save changes</button>
+        </div></div>
+      <div data-save-state="idle" class="pro-save-banner"><span class="i"></span><span class="t">Changes are stored locally in this browser.</span></div>
+
+      <section class="pro-card pro-pref-card" data-pref-group>
+        <div class="pro-card-head"><h2>🛡 Security guards</h2><small>Live from /guvenlik settings</small></div>
+        ${sw('anti_nuke', 'Anti-Nuke', 'Blocks channel & role deletion')}
+        ${sw('anti_link', 'Anti-Link', 'Blocks advertising & invites')}
+        ${sw('anti_swear', 'Anti-Swear', 'Filters configured words')}
+        ${sw('anti_spam', 'Anti-Spam', 'Blocks message flooding')}
+      </section>
+
+      <section class="pro-card pro-pref-card" data-pref-group>
+        <div class="pro-card-head"><h2>✨ Modules</h2><small>Which VYBot systems are active</small></div>
+        ${sw('leveling_enabled', 'Leveling & XP', 'Grant XP per message, ranks and level roles')}
+        ${sw('economy_enabled', 'Economy', 'Balances, daily and daily rewards')}
+        ${sw('welcome_enabled', 'Welcome', 'Welcome messages for new members')}
+        ${sw('log_enabled', 'Moderation logging', 'Record moderation events (/modlog)')}
+      </section>
+
+      <section class="pro-card pro-pref-card" data-pref-group>
+        <div class="pro-card-head"><h2>🎵 Music</h2><small>Voice playback settings</small></div>
+        ${sw('music_enabled', 'Music player', 'Play music from voice channels')}
+        ${sw('music_stay', 'Stay in channel', 'Keep the bot connected after queue ends')}
+      </section>
+
+      <section class="pro-card pro-pref-card" data-pref-group>
+        <div class="pro-card-head"><h2>✓ General</h2><small>Server-wide behavior</small></div>
+        ${sw('auto_role_enabled', 'Auto role', 'Assign a role on join (/otorol)')}
+        ${sw('mod_log_enabled', 'Mod-log channel', 'Audit log for staff actions')}
+      </section>
+
+      <div class="pro-save-note">${editNote}</div>`;
   }
 
   function genericView(title, eyebrow, description, rows) {
@@ -246,10 +353,10 @@ const MODULE_VIEWS = {
        ['▣', 'Message logs', 'Deleted / edited messages', '—'],
        ['◆', 'Role & channel logs', 'Permission changes', '—']]],
   };
-function contentFor() {
+function contentFor(rootEl) {
     if (state.view === 'overview') return overview();
     if (state.view === 'analytics') return analytics();
-    if (state.view === 'settings') return settingsView();
+    if (state.view === 'settings') return settingsView(rootEl);
     const mv = MODULE_VIEWS[state.view];
     if (mv) return genericView(...mv);
     return overview();
@@ -275,20 +382,25 @@ function contentFor() {
       ? leaderboard.slice(0, 5).map((m, i) => `<div class="pro-member-row ${rankCls(i)}"><b>#${i + 1}</b><em>Lv ${m.level || 0}</em><span>${esc(m.name || 'Unknown')}</span><strong>${fmtN(m.xp)} XP</strong></div>`).join('')
       : '<div class="pro-chart-empty">No activity published yet.</div>';
 
+    const userLabel = state.user ? (state.user.global_name || state.user.username || 'Connected') : null;
+    const userButton = userLabel
+      ? `<button class="pro-user-button" type="button"><span class="pro-avatar">${esc(userLabel[0].toUpperCase())}</span> ${esc(userLabel)}⌄</button>`
+      : `<button class="pro-user-button pro-signin" type="button" data-pro-signin="1">Sign in with Discord</button>`;
+
     root.innerHTML = `<div class="pro-app">
       <aside class="pro-sidebar">
         <div class="pro-brand"><span>V</span><strong>VyBots</strong></div>
         <button class="pro-server-select" type="button"><span class="pro-server-avatar">${esc(((guild && guild.name) || 'V')[0].toUpperCase())}</span><span><strong>${esc(guildName)}</strong><small>${hasLive() ? (guild ? 'Connected server' : 'No live telemetry') : 'Waiting for telemetry'}</small></span><b>⌄</b></button>
         ${guildChips}
         <nav class="pro-main-nav">${nav()}</nav>
-        <div class="pro-sidebar-footer"><span class="pro-status-dot ${statusTone}"></span><span>${statusTxt === '—' ? 'No telemetry' : (statusTxt === 'Online' ? 'Bot online' : 'Bot offline')}<small>${updated ? 'Synced ' + new Date(updated).toLocaleTimeString() : (hasLive() ? 'Waiting sync…' : 'Waiting for live data')}</small></span></div>
+        <div class="pro-sidebar-footer"><span class="pro-status-dot ${statusTone}"></span><span>${statusTxt === '—' ? 'No telemetry' : (statusTxt === 'Online' ? 'Bot online' : 'Bot offline')}<small>${updated ? 'Synced ' + new Date(updated).toLocaleTimeString() + ' · refresh 10s' : (hasLive() ? 'Waiting sync…' : 'Waiting for live data')}</small></span></div>
       </aside>
       <main class="pro-main">
         <header class="pro-header">
           <div class="pro-breadcrumb">Server workspace <span>/</span> ${esc(guildName)}</div>
-          <div class="pro-header-actions"><label class="pro-search">⌕ <input placeholder="Search server..." aria-label="Search server"></label><button class="pro-icon-button" type="button">♧</button><button class="pro-user-button" type="button"><span class="pro-avatar">?</span> Guest⌄</button></div>
+          <div class="pro-header-actions"><label class="pro-search">⌕ <input placeholder="Search server..." aria-label="Search server"></label><button class="pro-icon-button" type="button">♧</button>${userButton}</div>
         </header>
-        <div class="pro-content">${contentFor()}</div>
+        <div class="pro-content">${contentFor(root)}</div>
       </main>
       <aside class="pro-right-rail">
         <section class="pro-rail-card"><div class="pro-rail-title"><h2>Server health</h2><span>›</span></div>${statusRow('Bot status', statusTxt, statusTone)}${statusRow('API status', hasLive() ? 'Operational' : 'Awaiting telemetry', hasLive() ? 'good' : '')}${statusRow('Latency', latency, '')}${statusRow('Uptime', fmtUptime(bot.uptimeSeconds), '')}</section>
@@ -311,9 +423,30 @@ function contentFor() {
         render();
       })
     );
+
+    /* ---------- interaktif ayarlar ---------- */
+    bindToggles(root);
+    root.querySelector('[data-save]')?.addEventListener('click', () => saveNow(root));
+    root.querySelector('[data-pro-signin]')?.addEventListener('click', () => {
+      if (typeof window.__vybotStartLogin === 'function') window.__vybotStartLogin();
+      else if (cfg.oauthRedirectUri) window.location.assign(cfg.oauthRedirectUri);
+    });
+    const saveBanner = root.querySelector('[data-save-state]');
+    if (saveBanner) {
+      const update = () => {
+        const kind = saveBanner.getAttribute('data-save-state');
+        saveBanner.className = 'pro-save-banner ' + (kind === 'saved' ? 'ok' : kind === 'dirty' ? 'dirty' : '');
+        saveBanner.querySelector('.t').textContent =
+          kind === 'saved' ? '✓ Saved in this browser. Apply on Discord with /panel-bagla for server-wide effect.'
+          : kind === 'dirty' ? '● Unsaved changes — click "Save changes".'
+          : 'Changes are stored locally in this browser.';
+      };
+      update();
+      new MutationObserver(update).observe(saveBanner, { attributes: true, attributeFilter: ['data-save-state'] });
+    }
   }
 
-  function loadLive() {
+  function loadLive(silent) {
     if (!liveDataUrl) { state.loading = false; state.error = true; render(); return; }
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
     Promise.race([
@@ -323,8 +456,23 @@ function contentFor() {
       }),
       timeout,
     ])
-      .then((data) => { state.live = data; state.loading = false; state.error = false; render(); })
-      .catch(() => { state.loading = false; state.error = true; render(); });
+      .then((data) => {
+        const key = JSON.stringify(data);
+        if (!silent || key !== state.lastKey) {
+          state.lastKey = key;
+          state.live = data;
+          state.loading = false;
+          state.error = false;
+          render();
+        }
+      })
+      .catch(() => {
+        if (!silent) {
+          state.loading = false;
+          state.error = true;
+          render();
+        }
+      });
   }
 
   window.addEventListener('popstate', () => {
@@ -337,7 +485,15 @@ function contentFor() {
     state.error = false;
     render();
   });
+  window.addEventListener('vybot:auth-user', (event) => {
+    state.user = event.detail || null;
+    render();
+  });
 
   render();
-  loadLive();
+  loadLive(false);
+  /* HER 10 SANİYEDE BİR sessiz canlı yenileme — kullanıcı etkileşimine dokunmaz */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches || true) {
+    setInterval(() => loadLive(true), 10000);
+  }
 })();

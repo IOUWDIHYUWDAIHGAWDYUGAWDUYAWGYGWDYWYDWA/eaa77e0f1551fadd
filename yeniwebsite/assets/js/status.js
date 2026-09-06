@@ -5,6 +5,7 @@
  * (live-data dalı). Gerçek veri VARSA gösterilir; YOKSA asla sahte "çalışıyor"
  * durumu gösterilmez — net bir "veri yok" durumu sunulur.
  * Bot online bilgisi + updatedAt alanı gerçek bot telemetrisidir.
+ * Sayfa HER 10 SANİYEDE BIR canlı veriyi yeniden çeker (sessiz polling).
  */
 (() => {
   'use strict';
@@ -14,6 +15,8 @@
   const cards = document.querySelectorAll('.status-card[data-service]');
   const note = document.getElementById('status-note');
   if (!banner || !cards.length) return;
+
+  const REFRESH_MS = 10000;
 
   const setCard = (name, state, desc) => {
     const card = document.querySelector(`[data-service="${name}"]`);
@@ -38,57 +41,66 @@
     banner.querySelector('.sb-sub').textContent = sub;
   }
 
+  function run() {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), cfg.liveDataTimeoutMs || 8000)
+    );
+
+    return Promise.race([
+      fetch(cfg.liveDataUrl, { cache: 'no-store' }).then((r) => {
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }),
+      timeout,
+    ])
+      .then((data) => {
+        const guilds = Object.values(data.guilds || {});
+        const bot = data.bot || {};
+        const hasBotPayload = Boolean(data.updatedAt) || typeof bot.guildCount === 'number' || typeof bot.ping === 'number';
+        const botOnline = guilds.some((g) => g.botOnline) || hasBotPayload;
+        const totalMembers = guilds.reduce((sum, g) => sum + (g.memberCount || 0), 0);
+        const serverCount = typeof bot.guildCount === 'number' ? bot.guildCount : guilds.length;
+        const updated = data.updatedAt ? new Date(data.updatedAt) : null;
+
+        if (botOnline) {
+          setBanner('ok', 'Tüm sistemler çalışıyor', updated
+            ? 'Canlı veri · Son güncelleme: ' + updated.toLocaleString('tr-TR')
+            : 'Canlı veri kaynağından alındı');
+          setCard('bot', 'ok', (serverCount || guilds.length) ? `${serverCount || guilds.length} sunucu aktif` : 'Bot çevrimiçi');
+          setCard('database', 'ok', 'SQLite bağlantısı aktif');
+          setCard('api', 'ok', totalMembers ? `${totalMembers.toLocaleString('tr-TR')} üyeye hizmet veriyor` : 'Discord API bağlantısı aktif');
+          setCard('web', 'ok', 'Statik site çalışıyor');
+        } else {
+          setBanner('error', 'Bot yanıt vermiyor', 'Canlı veri kaynağına ulaşıldı ancak bot çevrimdışı görünüyor');
+          setCard('bot', 'unknown', 'Çevrimdışı görünüyor');
+          setCard('database', 'unknown');
+          setCard('api', 'unknown');
+          setCard('web', 'ok', 'Statik site çalışıyor');
+        }
+
+        if (note) {
+          note.hidden = false;
+          note.innerHTML =
+            'Canlı veri kaynağı: botun live-data dalındaki live-data.json dosyası. Bu sayfa her 10 saniyede bir yenilenir.';
+        }
+      })
+      .catch(() => {
+        /* Gerçek veri yok → asla sahte durum gösterme (26. madde) */
+        setBanner('error', 'Durum verisi kullanılamıyor',
+          'Botun canlı veri bağlantısına ulaşılamadı — gerçek durum gösterilemiyor');
+        cards.forEach((c) => setCard(c.dataset.service, 'unknown'));
+        if (note) {
+          note.hidden = false;
+          note.innerHTML =
+            'Canlı durum için botun <code>live-data</code> dalındaki <code>live-data.json</code> dosyasına ' +
+            'erişilemesi gerekiyor. Bot çalıştığında bu sayfa otomatik olarak gerçek durumu gösterir. ' +
+            'Bu süre içinde sahte uptime verisi gösterilmez.';
+        }
+      });
+  }
+
   cards.forEach((c) => setCard(c.dataset.service, 'loading'));
-
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), cfg.liveDataTimeoutMs || 8000)
-  );
-
-  Promise.race([
-    fetch(cfg.liveDataUrl, { cache: 'no-store' }).then((r) => {
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
-    }),
-    timeout,
-  ])
-    .then((data) => {
-      const guilds = Object.values(data.guilds || {});
-      const bot = data.bot || {};
-      const hasBotPayload = Boolean(data.updatedAt) || typeof bot.guildCount === 'number' || typeof bot.ping === 'number';
-      const botOnline = guilds.some((g) => g.botOnline) || hasBotPayload;
-      const totalMembers = guilds.reduce((sum, g) => sum + (g.memberCount || 0), 0);
-      const serverCount = typeof bot.guildCount === 'number' ? bot.guildCount : guilds.length;
-      const updated = data.updatedAt ? new Date(data.updatedAt) : null;
-
-      if (botOnline) {
-        setBanner('ok', 'Tüm sistemler çalışıyor', updated
-          ? 'Canlı veri · Son güncelleme: ' + updated.toLocaleString('tr-TR')
-          : 'Canlı veri kaynağından alındı');
-        setCard('bot', 'ok', (serverCount || guilds.length) ? `${serverCount || guilds.length} sunucu aktif` : 'Bot çevrimiçi');
-        setCard('database', 'ok', 'SQLite bağlantısı aktif');
-        setCard('api', 'ok', totalMembers ? `${totalMembers.toLocaleString('tr-TR')} üyeye hizmet veriyor` : 'Discord API bağlantısı aktif');
-        setCard('web', 'ok', 'Statik site çalışıyor');
-      } else {
-        setBanner('error', 'Bot yanıt vermiyor', 'Canlı veri kaynağına ulaşıldı ancak bot çevrimdışı görünüyor');
-        setCard('bot', 'unknown', 'Çevrimdışı görünüyor');
-        setCard('database', 'unknown');
-        setCard('api', 'unknown');
-        setCard('web', 'ok', 'Statik site çalışıyor');
-      }
-
-      if (note) note.hidden = false;
-    })
-    .catch(() => {
-      /* Gerçek veri yok → asla sahte durum gösterme (26. madde) */
-      setBanner('error', 'Durum verisi kullanılamıyor',
-        'Botun canlı veri bağlantısına ulaşılamadı — gerçek durum gösterilemiyor');
-      cards.forEach((c) => setCard(c.dataset.service, 'unknown'));
-      if (note) {
-        note.hidden = false;
-        note.innerHTML =
-          'Canlı durum için botun <code>live-data</code> dalındaki <code>live-data.json</code> dosyasına ' +
-          'erişilemesi gerekiyor. Bot çalıştığında bu sayfa otomatik olarak gerçek durumu gösterir. ' +
-          'Bu süre içinde sahte uptime verisi gösterilmez.';
-      }
-    });
+  run();
+  /* HER 10 SANİYEDE BIR sessiz yenileme */
+  setInterval(run, REFRESH_MS);
 })();

@@ -13,8 +13,9 @@ window.VYBOT_CONFIG = {
   inviteUrl:
     'https://discord.com/api/oauth2/authorize?client_id=1545157265831759903&permissions=1100349828182&scope=bot%20applications.commands',
 
-  // Canlı veri: bot, her 5 dakikada live-data dalına gerçek sunucu verisi yazar
+  // Canlı veri: bot, düzenli olarak live-data dalına gerçek sunucu verisi yazar
   // (bkz. src/utils/liveDataSync.js → { version, updatedAt, guilds, bot })
+  // Site bu dosyayı her 10 saniyede bir yeniden çekerek güncel gösterir.
   liveDataUrl:
     'https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/live-data.json',
 

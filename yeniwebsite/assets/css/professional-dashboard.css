@@ -113,6 +113,35 @@
 @media (max-width: 1250px) { .pro-app { grid-template-columns: 190px minmax(0,1fr) 250px; } .pro-kpi-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 900px) { .pro-app { grid-template-columns: 178px minmax(0,1fr); } .pro-right-rail { display: none; } .pro-chart-grid, .pro-lower-grid { grid-template-columns: 1fr; } .pro-data-grid, .pro-settings-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 640px) { .pro-app { display: block; } .pro-sidebar { border-right: 0; border-bottom: 1px solid rgba(146,168,216,.11); } .pro-main-nav { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-sidebar-footer { display: none; } .pro-header { height: auto; min-height: 58px; padding: 12px 16px; } .pro-header-actions { gap: 5px; } .pro-search { width: 120px; } .pro-user-button { display: none; } .pro-content { padding: 20px 14px 35px; } .pro-view-heading { align-items: start; flex-direction: column; } .pro-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-kpi:last-child { grid-column: span 2; } .pro-data-grid, .pro-settings-grid { grid-template-columns: 1fr; } }
+/* VYBot — interaktif ayarlar (toggle) */
+.pro-signin { text-decoration: none; color: #9fd0ff; border: 1px solid rgba(43,127,255,.35); background: rgba(43,127,255,.1); border-radius: 999px; }
+.pro-signin:hover { background: rgba(43,127,255,.2); }
+.pro-pref-card > .pro-card-head small { color: #71839f; font-size: 10px; font-weight: 500; margin-left: 6px; }
+.pro-pref-card .pro-card-head { margin-bottom: 2px; }
+.pro-toggle-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-top: 1px solid rgba(146,168,216,.08); cursor: pointer; }
+.pro-toggle-row:first-of-type { border-top: 0; }
+.pro-toggle { position: relative; display: inline-flex; flex: 0 0 auto; }
+.pro-toggle input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.pro-toggle i { display: inline-block; width: 38px; height: 22px; border-radius: 999px; background: rgba(146,168,216,.22); border: 1px solid rgba(146,168,216,.25); transition: background .18s var(--ease, ease), border-color .18s var(--ease, ease); position: relative; }
+.pro-toggle i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #dce8fb; transition: transform .18s var(--ease, ease); }
+.pro-toggle input:checked + i { background: #2b7fff; border-color: #2b7fff; }
+.pro-toggle input:checked + i::after { transform: translateX(16px); background: #fff; }
+.pro-toggle input:focus-visible + i { outline: 2px solid #6faaff; outline-offset: 2px; }
+.pro-toggle-text { display: grid; gap: 2px; min-width: 0; }
+.pro-toggle-text strong { color: #dde8f9; font-size: 12px; font-weight: 600; }
+.pro-toggle-text small { color: #71839f; font-size: 10px; }
+.pro-save-banner { display: flex; align-items: center; gap: 8px; padding: 9px 13px; margin-bottom: 14px; border-radius: 9px; border: 1px solid rgba(146,168,216,.15); background: rgba(146,168,216,.06); color: #9fb0cd; font-size: 11px; }
+.pro-save-banner .i { width: 8px; height: 8px; border-radius: 50%; background: #71839f; flex: 0 0 auto; }
+.pro-save-banner.dirty { border-color: rgba(245,185,93,.4); background: rgba(245,185,93,.08); color: #f4d9a1; }
+.pro-save-banner.dirty .i { background: #f1bb4f; box-shadow: 0 0 8px rgba(241,187,79,.7); }
+.pro-save-banner.ok { border-color: rgba(85,224,164,.4); background: rgba(53,208,140,.1); color: #b3ead1; }
+.pro-save-banner.ok .i { background: #55e0a4; box-shadow: 0 0 8px rgba(85,224,164,.7); }
+.pro-save-note { margin-top: 14px; padding: 10px 14px; border-radius: 9px; border: 1px dashed rgba(146,168,216,.2); color: #7f90ad; font-size: 11px; line-height: 1.5; }
+.pro-heading-actions .pro-button.ghost { border-color: rgba(146,168,216,.2); }
+@media (max-width: 640px) {
+  .pro-heading-actions { flex-wrap: wrap; }
+  .pro-toggle-row { padding: 10px 0; }
+}
 /* VYBot — gerçek veri eklentileri */
 .pro-live-note { display: flex; align-items: center; gap: 8px; padding: 9px 13px; margin-bottom: 14px; border: 1px solid rgba(55,178,120,.18); border-radius: 9px; background: rgba(55,178,120,.07); color: #a9dcc2; font-size: 10px; }
 .pro-guild-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 10px; }
