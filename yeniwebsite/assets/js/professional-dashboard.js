@@ -35,6 +35,7 @@
     loading: true,
     error: false,
     lastKey: '',  // son render anahtarı — sessiz yenileme veri değişmeden render atlamaz
+    tunnelUrl: '',
   };
 
   /* ---------- yardımcılar ---------- */
@@ -152,26 +153,64 @@
     );
   }
 
+  function discordAccessToken() {
+    try {
+      const raw = localStorage.getItem('vybot_token');
+      if (!raw) return '';
+      const store = JSON.parse(raw);
+      if (!store || !store.access_token) return '';
+      if (store.expires_at && store.expires_at < Date.now()) return '';
+      return store.access_token;
+    } catch {
+      return '';
+    }
+  }
+
+  function apiBase() {
+    const fromLive = state.live && state.live.bot && state.live.bot.apiUrl;
+    const fromTunnel = state.tunnelUrl;
+    const fromCfg = cfg.botApiUrl;
+    return String(fromCfg || fromLive || fromTunnel || '').replace(/\/$/, '');
+  }
+
   function saveNow(rootEl) {
     savePrefs();
     const el = rootEl.querySelector('[data-save-state]');
-    if (el) el.setAttribute('data-save-state', 'saved');
-    // Bot HTTP API'ye direkt POST — site bottan veri ister, bot verir
-    const apiBase = cfg.botApiUrl;
-    if (!apiBase) return;
+    if (el) el.setAttribute('data-save-state', 'saving');
+    const base = apiBase();
+    if (!base) {
+      if (el) el.setAttribute('data-save-state', 'error');
+      console.warn('[VYBot] Bot API URL henuz yok (tunnel.json).');
+      return;
+    }
     const g = pguild();
-    const guildId = g && g.id ? g.id : 'default';
-    const token = cfg.apiToken || '';
-    fetch(`${apiBase.replace(/\/$/, '')}/api/guilds/${guildId}/settings`, {
+    const guildId = g && g.id ? g.id : '';
+    if (!guildId) {
+      if (el) el.setAttribute('data-save-state', 'error');
+      return;
+    }
+    const token = discordAccessToken();
+    if (!token) {
+      if (el) el.setAttribute('data-save-state', 'error');
+      console.warn('[VYBot] Discord oturumu gerekli.');
+      return;
+    }
+    fetch(`${base}/api/guilds/${guildId}/settings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-vybot-token': token,
+        Authorization: 'Bearer ' + token,
       },
       body: JSON.stringify(state.prefs),
     })
-      .then((r) => { if (!r.ok) console.warn('[VYBot] Bot API hatası:', r.status); })
-      .catch((e) => console.warn('[VYBot] Bot API erişilemedi:', e.message));
+      .then((r) => {
+        if (!r.ok) throw new Error('http ' + r.status);
+        if (el) el.setAttribute('data-save-state', 'saved');
+      })
+      .catch((e) => {
+        if (el) el.setAttribute('data-save-state', 'error');
+        console.warn('[VYBot] Bot API hatası:', e.message);
+      });
   }
 
   function nav() {
@@ -440,10 +479,12 @@ function contentFor(rootEl) {
     if (saveBanner) {
       const update = () => {
         const kind = saveBanner.getAttribute('data-save-state');
-        saveBanner.className = 'pro-save-banner ' + (kind === 'saved' ? 'ok' : kind === 'dirty' ? 'dirty' : '');
+        saveBanner.className = 'pro-save-banner ' + (kind === 'saved' ? 'ok' : kind === 'dirty' || kind === 'saving' ? 'dirty' : kind === 'error' ? 'err' : '');
         saveBanner.querySelector('.t').textContent =
-          kind === 'saved' ? '✓ Saved in this browser. Apply on Discord with /panel-bagla for server-wide effect.'
+          kind === 'saved' ? '✓ Saved to the bot over HTTPS.'
           : kind === 'dirty' ? '● Unsaved changes — click "Save changes".'
+          : kind === 'saving' ? 'Saving…'
+          : kind === 'error' ? 'Could not reach the bot API. Sign in and try again after the host reconnects.'
           : 'Changes are stored locally in this browser.';
       };
       update();
@@ -461,8 +502,19 @@ function contentFor(rootEl) {
       }),
       timeout,
     ])
-      .then((data) => {
-        const key = JSON.stringify(data);
+      .then(async (data) => {
+        if (cfg.tunnelUrl && !cfg.botApiUrl) {
+          try {
+            const tr = await fetch(cfg.tunnelUrl, { cache: 'no-store' });
+            if (tr.ok) {
+              const t = await tr.json();
+              if (t && t.apiUrl) state.tunnelUrl = t.apiUrl;
+            }
+          } catch {
+            /* tunnel.json henuz yok olabilir */
+          }
+        }
+        const key = JSON.stringify(data) + '|' + (state.tunnelUrl || '');
         if (!silent || key !== state.lastKey) {
           state.lastKey = key;
           state.live = data;

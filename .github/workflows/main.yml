@@ -78,6 +78,12 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node src/deploy-commands.js
 
+      - name: 🌐 cloudflared Kur
+        run: |
+          sudo curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          sudo chmod a+rx /usr/local/bin/cloudflared
+          cloudflared --version
+
       - name: 🤖 Botu Çalıştır (5 Saatlik Döngü)
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
@@ -86,14 +92,52 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GITHUB_SETTINGS_RAW_URL: https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/main/guild-settings.json
+          VYBOT_API_PORT: '8788'
+          VYBOT_API_TOKEN: ${{ secrets.VYBOT_API_TOKEN }}
+          VYBOT_BRIDGE_PORT: '8787'
+          BOT_API_ORIGIN: http://127.0.0.1:8788
+          VYBOT_CORS_ORIGIN: https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           echo "========================================================"
           echo "⚡ vybot başlatılıyor..."
           echo "⏰ Bu oturum 4 saat 55 dakika boyunca kesintisiz çalışacak."
           echo "🔄 Süre dolduğunda kendini otomatik yenileyip sıradaki Actions'ı başlatacak."
           echo "========================================================"
+
+          node bridge/server.js &
+          echo $! > /tmp/vybot-bridge.pid
+
+          if [ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]; then
+            cloudflared tunnel --no-autoupdate run --token "$CLOUDFLARE_TUNNEL_TOKEN" >/tmp/cloudflared.log 2>&1 &
+            echo $! > /tmp/cloudflared.pid
+            echo "Named Cloudflare Tunnel baslatildi."
+          else
+            cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8787 >/tmp/cloudflared.log 2>&1 &
+            echo $! > /tmp/cloudflared.pid
+            TUNNEL_URL=""
+            for i in $(seq 1 45); do
+              TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare.com' /tmp/cloudflared.log | head -n 1 || true)
+              if [ -n "$TUNNEL_URL" ]; then
+                break
+              fi
+              sleep 1
+            done
+            if [ -n "$TUNNEL_URL" ]; then
+              echo "Quick Tunnel hazir."
+              node scripts/publish-tunnel-url.js "$TUNNEL_URL" || echo "tunnel.json yazilamadi (live-data dalini kontrol et)"
+            else
+              echo "Uyari: trycloudflare URL okunamadi. WARP/cloudflared log:"
+              tail -n 40 /tmp/cloudflared.log || true
+            fi
+          fi
+
           # 4 saat 55 dakika = 17700 saniye sonra temiz sonlanma
           timeout 17700 node src/index.js || true
+
+          if [ -f /tmp/vybot-bridge.pid ]; then kill "$(cat /tmp/vybot-bridge.pid)" 2>/dev/null || true; fi
+          if [ -f /tmp/cloudflared.pid ]; then kill "$(cat /tmp/cloudflared.pid)" 2>/dev/null || true; fi
           echo "Oturum süresi tamamlandı, yenileniyor..."
 
       - name: 🔄 Sıradaki 5 Saatlik Döngüyü Başlat (Auto-Relay)

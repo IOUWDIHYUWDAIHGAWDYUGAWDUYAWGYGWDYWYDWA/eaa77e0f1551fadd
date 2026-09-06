@@ -33,7 +33,8 @@ window.VYBOT_CONFIG = {
   // Server-side panel API'si hazır olduğunda burada kullanılacak.
   dashboardApiUrl: '',
 
-  // Bot HTTP API — dashboard ayarları buraya POST eder (http://BOT_IP:PORT)
-  // NOT: GitHub Actions runner dışarıdan erişilemez. Bot'a ayrı hostinge (VPS/Railway/Fly.io) taşınmalı.
+  // Sabit named-tunnel URL'si (domain bağlanınca doldurulur). Boşsa live-data/tunnel.json okunur.
   botApiUrl: '',
-  apiToken: '',
+
+  tunnelUrl:
+    'https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/tunnel.json',
