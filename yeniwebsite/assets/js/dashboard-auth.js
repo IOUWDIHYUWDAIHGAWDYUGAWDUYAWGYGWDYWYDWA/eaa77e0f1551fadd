@@ -11,6 +11,9 @@ const backButton = document.getElementById('dash-back');
 const panelServerName = document.getElementById('panel-server-name');
 const categoryButtons = document.querySelectorAll('[data-category]');
 const settingsLead = document.getElementById('dash-settings-lead');
+const stats = document.getElementById('server-stats');
+const childGuildId = new URLSearchParams(window.location.search).get('guild');
+const childMode = Boolean(childGuildId && window.opener);
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 let accessToken = '';
@@ -142,8 +145,20 @@ function renderGuilds(guilds) {
   }).join('');
 
   guildsElement.querySelectorAll('[data-manage-guild]').forEach((button) => {
-    button.addEventListener('click', () => openSettings(button.dataset.manageGuild, button.dataset.guildName));
+    button.addEventListener('click', () => openGuildWindow(button.dataset.manageGuild));
   });
+}
+
+function openGuildWindow(guildId) {
+  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage`, '_blank', 'popup,width=1280,height=900,resizable=yes,scrollbars=yes');
+  if (!child) {
+    setFeedback('Allow pop-ups to open the server dashboard.', 'error');
+    return;
+  }
+  const sendToken = () => child.postMessage({ type: 'vybot:dashboard-token', token: accessToken }, window.location.origin);
+  window.addEventListener('message', (event) => {
+    if (event.origin === window.location.origin && event.source === child && event.data?.type === 'vybot:dashboard-ready') sendToken();
+  }, { once: true });
 }
 
 function openSettings(guildId, guildName) {
@@ -153,6 +168,21 @@ function openSettings(guildId, guildName) {
   settings.dataset.guildId = guildId;
   settings.hidden = false;
   settings.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadServerStats(guildId, guildName) {
+  const response = await fetch(config.liveDataUrl, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Live server data is unavailable.');
+  const data = await response.json();
+  const guild = data.guilds?.[guildId];
+  if (!guild) throw new Error('This server is not available in live telemetry yet.');
+  panelServerName.textContent = guild.name || guildName || 'Server';
+  settingsTitle.textContent = `${guild.name || guildName || 'Server'} security`;
+  document.querySelector('[data-stat="memberCount"]').textContent = (guild.memberCount || 0).toLocaleString('en-US');
+  document.querySelector('[data-stat="channels"]').textContent = String(guild.channels || 0);
+  document.querySelector('[data-stat="roles"]').textContent = String(guild.roles || 0);
+  document.querySelector('[data-stat="bot"]').textContent = guild.botOnline ? 'Online' : 'Offline';
+  document.querySelector('[data-stat="updated"]').textContent = data.updatedAt ? `Synced ${new Date(data.updatedAt).toLocaleTimeString()}` : 'Live telemetry';
 }
 
 function selectCategory(category) {
@@ -213,6 +243,29 @@ async function completeLogin() {
   return true;
 }
 
+function enterChildMode() {
+  if (!childMode) return;
+  document.body.classList.add('dashboard-child');
+  document.querySelector('.page-hero').hidden = true;
+  document.querySelector('.dashboard-session').hidden = true;
+  document.querySelector('.section').hidden = true;
+  settings.hidden = false;
+  window.opener.postMessage({ type: 'vybot:dashboard-ready' }, window.location.origin);
+  window.addEventListener('message', async (event) => {
+    if (event.origin !== window.location.origin || event.data?.type !== 'vybot:dashboard-token') return;
+    accessToken = event.data.token || '';
+    try {
+      const guilds = await discordRequest('/users/@me/guilds');
+      const guild = guilds.find((item) => item.id === childGuildId);
+      if (!guild) throw new Error('You no longer have access to this server.');
+      document.body.classList.add('dashboard-authenticated');
+      await loadServerStats(childGuildId, guild.name);
+    } catch (error) {
+      setFeedback(error.message, 'error');
+    }
+  }, { once: true });
+}
+
 function logout() {
   accessToken = '';
   document.body.classList.remove('dashboard-authenticated');
@@ -227,6 +280,7 @@ logoutButton?.addEventListener('click', logout);
 backButton?.addEventListener('click', closeSettings);
 categoryButtons.forEach((button) => button.addEventListener('click', () => selectCategory(button.dataset.category)));
 
+enterChildMode();
 completeLogin().catch((error) => {
   accessToken = '';
   setFeedback(error.message, 'error');

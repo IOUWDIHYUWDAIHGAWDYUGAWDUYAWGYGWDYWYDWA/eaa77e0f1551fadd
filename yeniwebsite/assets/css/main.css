@@ -1388,6 +1388,15 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .panel-nav-item.active span { color: var(--accent-bright); }
 .panel-nav-item em { margin-left: auto; color: var(--text-3); font-size: 9px; font-style: normal; text-transform: uppercase; letter-spacing: .08em; }
 .panel-main { min-width: 0; padding: clamp(24px, 4vw, 44px); }
+.server-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 30px; }
+.server-stat { min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(146, 168, 216, 0.035); }
+.server-stat span, .server-stat small { display: block; color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.server-stat strong { display: block; margin: 6px 0 2px; color: var(--text); font-size: 22px; line-height: 1; }
+.server-stat small { font-size: 10px; text-transform: none; letter-spacing: 0; }
+.server-stat .stat-online { color: #5ee6ad; font-size: 16px; }
+.dashboard-child { min-width: 980px; }
+.dashboard-child .nav, .dashboard-child footer { display: none; }
+.dashboard-child main { padding-top: 0; }
 .panel-live { display: inline-flex; align-items: center; gap: 7px; color: #5ee6ad; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .panel-live i { width: 7px; height: 7px; border-radius: 50%; background: #35d08c; box-shadow: 0 0 10px rgba(53, 208, 140, .75); }
 .settings-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
@@ -1428,6 +1437,7 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
   .panel-sidebar { order: 0; border-left: 0; border-bottom: 1px solid var(--border); }
   .panel-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .panel-main { padding: 24px 18px; }
+  .server-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .settings-head { align-items: start; flex-direction: column; }
   .settings-grid { grid-template-columns: 1fr; }
 }

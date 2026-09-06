@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.6">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.7">
 </head>
 <body>
 
@@ -99,6 +99,12 @@
             </nav>
           </aside>
           <div class="panel-main">
+            <div class="server-stats" id="server-stats" aria-live="polite">
+              <div class="server-stat"><span>Members</span><strong data-stat="memberCount">--</strong><small>community size</small></div>
+              <div class="server-stat"><span>Channels</span><strong data-stat="channels">--</strong><small>active channels</small></div>
+              <div class="server-stat"><span>Roles</span><strong data-stat="roles">--</strong><small>server roles</small></div>
+              <div class="server-stat"><span>Bot status</span><strong class="stat-online" data-stat="bot">--</strong><small data-stat="updated">waiting for live data</small></div>
+            </div>
             <div class="settings-head">
               <div><span class="eyebrow">Server settings</span><h2 class="title" id="dash-settings-title">Security</h2><p class="lead" id="dash-settings-lead">Protect your community with clear, focused controls.</p></div>
               <span class="panel-live"><i></i>Connected</span>
@@ -219,7 +225,7 @@
   <script src="../assets/js/data/config.js"></script>
   <script src="../assets/js/data/i18n.js"></script>
   <script type="module" src="../assets/js/ui.js"></script>
-  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.3"></script>
+  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.4"></script>
 </body>
 </html>
 
