@@ -1,12 +1,12 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-06T16:30:31.536Z",
+  "updatedAt": "2026-09-06T16:31:31.542Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 2101,
+    "uptimeSeconds": 2161,
     "guildCount": 1,
-    "ping": 76
+    "ping": 77
   },
   "guilds": {
     "1536835757132751048": {
@@ -33,7 +33,16 @@
         "level_system": 1
       },
       "bridge": null,
-      "leaderboard": []
+      "leaderboard": [
+        {
+          "rank": 1,
+          "id": "918541990877089842",
+          "name": "Vynex",
+          "avatar": "https://cdn.discordapp.com/avatars/918541990877089842/5560bed278015b4e41ce8aba94e85b2e.webp?size=64",
+          "level": 0,
+          "xp": 16
+        }
+      ]
     }
   }
 }
