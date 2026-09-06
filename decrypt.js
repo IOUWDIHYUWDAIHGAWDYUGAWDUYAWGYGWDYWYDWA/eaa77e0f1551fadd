@@ -27,35 +27,41 @@ const tmpDir = '/tmp/vybot_' + Date.now();
 fs.mkdirSync(tmpDir, { recursive: true });
 
 const pyScript = path.join(tmpDir, 'extract.py');
-fs.writeFileSync(
-  pyScript,
-  [
-    'import zipfile, sys',
-    'with zipfile.ZipFile(sys.argv[1], "r") as z:',
-    '    z.extractall(sys.argv[2])',
-    '    print("Cikarildi: %d dosya" % len(z.namelist()))',
-  ].join('\n'),
-  'utf8'
-);
+const pyLines = [
+  'import zipfile, sys, os',
+  'dest = sys.argv[2]',
+  'bs = chr(92)',
+  'def ensure_parent(target):',
+  '    parent = os.path.dirname(target)',
+  '    chain = []',
+  '    cur = parent',
+  '    while cur and os.path.abspath(cur).startswith(os.path.abspath(dest)):',
+  '        chain.append(cur)',
+  '        nxt = os.path.dirname(cur)',
+  '        if nxt == cur: break',
+  '        cur = nxt',
+  '    for p in reversed(chain):',
+  '        if os.path.isfile(p): os.remove(p)',
+  '        if not os.path.isdir(p): os.makedirs(p, exist_ok=True)',
+  'with zipfile.ZipFile(sys.argv[1], "r") as z:',
+  '    for info in z.infolist():',
+  '        name = info.filename.replace(bs, "/")',
+  '        parts = [p for p in name.split("/") if p and p not in (".", "..")]',
+  '        if not parts: continue',
+  '        target = os.path.join(dest, *parts)',
+  '        is_dir = info.is_dir() or name.endswith("/")',
+  '        if is_dir:',
+  '            if os.path.isfile(target): os.remove(target)',
+  '            os.makedirs(target, exist_ok=True)',
+  '            continue',
+  '        ensure_parent(target)',
+  '        if os.path.isdir(target): continue',
+  '        with z.open(info) as src, open(target, "wb") as out:',
+  '            out.write(src.read())',
+  '    print("Cikarildi: %d girdi" % len(z.namelist()))',
+];
+fs.writeFileSync(pyScript, pyLines.join('\n'), 'utf8');
 execSync(`python3 "${pyScript}" bundle.zip "${tmpDir}"`, { encoding: 'utf8', stdio: 'inherit' });
-
-function rewriteWindowsZipNames(root) {
-  for (const name of fs.readdirSync(root)) {
-    const full = path.join(root, name);
-    if (name === 'extract.py') continue;
-    if (name.includes('\\') || name.includes('/')) {
-      const parts = name.replace(/\\/g, '/').split('/').filter((p) => p && p !== '.' && p !== '..');
-      if (!parts.length) continue;
-      const dest = path.join(root, ...parts);
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.renameSync(full, dest);
-      continue;
-    }
-    if (fs.statSync(full).isDirectory()) rewriteWindowsZipNames(full);
-  }
-}
-
-rewriteWindowsZipNames(tmpDir);
 
 function hasBotEntry(dir) {
   return fs.existsSync(path.join(dir, 'index.js')) || fs.existsSync(path.join(dir, 'deploy-commands.js'));
