@@ -1343,6 +1343,26 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .guild-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .guild-copy span { color: var(--text-3); font-size: 12px; }
 .guild-card .btn { margin-left: auto; flex: none; }
+.guild-card.is-installed { border-color: rgba(53, 208, 140, 0.28); }
+.guild-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  color: #5ee6ad;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.guild-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #35d08c;
+  box-shadow: 0 0 10px rgba(53, 208, 140, 0.75);
+}
 .guild-empty { color: var(--text-2); }
 
 @media (max-width: 640px) {

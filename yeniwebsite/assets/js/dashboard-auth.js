@@ -8,6 +8,7 @@ const guildsElement = document.getElementById('dash-guilds');
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 let accessToken = '';
+let installedGuildIds = new Set();
 
 function setFeedback(message, type = '') {
   if (!feedback) return;
@@ -104,6 +105,18 @@ function inviteForGuild(guildId) {
   return url.toString();
 }
 
+async function loadInstalledGuildIds() {
+  if (!config.liveDataUrl) return;
+  try {
+    const response = await fetch(config.liveDataUrl, { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    installedGuildIds = new Set(Object.keys(data.guilds || {}));
+  } catch {
+    installedGuildIds = new Set();
+  }
+}
+
 function renderGuilds(guilds) {
   if (!guilds.length) {
     guildsElement.innerHTML = '<p class="guild-empty">No manageable Discord servers were found for this account.</p>';
@@ -111,14 +124,15 @@ function renderGuilds(guilds) {
   }
 
   guildsElement.innerHTML = guilds.map((guild) => {
-    const installed = false;
+    const installed = installedGuildIds.has(guild.id);
     const icon = guild.icon
       ? `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="">`
       : `<span>${escapeHtml(guild.name.slice(0, 2).toUpperCase())}</span>`;
     const action = installed
-      ? '<button class="btn btn-primary btn-sm" type="button">Manage</button>'
+      ? '<span class="guild-status"><i></i>Installed</span>'
       : `<a class="btn btn-ghost btn-sm" href="${escapeHtml(inviteForGuild(guild.id))}" target="_blank" rel="noopener noreferrer">Add VYBot</a>`;
-    return `<article class="guild-card"><div class="guild-avatar">${icon}</div><div class="guild-copy"><strong>${escapeHtml(guild.name)}</strong><span>Manage Guild access</span></div>${action}</article>`;
+    const accessLabel = installed ? 'VYBot is active here' : 'Manage Guild access';
+    return `<article class="guild-card ${installed ? 'is-installed' : ''}"><div class="guild-avatar">${icon}</div><div class="guild-copy"><strong>${escapeHtml(guild.name)}</strong><span>${accessLabel}</span></div>${action}</article>`;
   }).join('');
 }
 
@@ -143,6 +157,7 @@ async function completeLogin() {
   const [user, guilds] = await Promise.all([
     discordRequest('/users/@me'),
     discordRequest('/users/@me/guilds'),
+    loadInstalledGuildIds(),
   ]);
   const manageableGuilds = guilds
     .filter((guild) => {
