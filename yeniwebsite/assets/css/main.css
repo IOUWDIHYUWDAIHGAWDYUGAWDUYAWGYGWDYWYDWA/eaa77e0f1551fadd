@@ -1292,6 +1292,13 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .dashboard-session {
   padding: 0 0 clamp(60px, 8vw, 96px);
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(9, 13, 24, 0.74), transparent);
+}
+.dashboard-authenticated .page-hero {
+  padding-bottom: 34px;
+}
+.dashboard-authenticated .page-hero .hero-cta {
+  margin-top: 20px !important;
 }
 .session-head {
   display: flex;
@@ -1303,11 +1310,16 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .session-head .eyebrow { margin-bottom: 10px; }
 .session-head .title { font-size: clamp(26px, 3.5vw, 40px); }
 .session-head .lead { margin-top: 8px; }
-.guild-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.guild-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 14px;
+}
 .guild-card {
   display: flex;
   align-items: center;
   gap: 13px;
+  min-height: 72px;
   min-width: 0;
   padding: 14px;
   border: 1px solid var(--border);
@@ -1327,7 +1339,7 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
   font-weight: 800;
 }
 .guild-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.guild-copy { display: grid; min-width: 0; gap: 2px; }
+.guild-copy { display: grid; flex: 1 1 auto; min-width: 0; gap: 3px; }
 .guild-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .guild-copy span { color: var(--text-3); font-size: 12px; }
 .guild-card .btn { margin-left: auto; flex: none; }

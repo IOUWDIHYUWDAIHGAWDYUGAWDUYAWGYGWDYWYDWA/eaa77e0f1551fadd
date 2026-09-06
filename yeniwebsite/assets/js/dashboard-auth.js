@@ -153,6 +153,7 @@ async function completeLogin() {
 
   userName.textContent = user.global_name || user.username;
   renderGuilds(manageableGuilds);
+  document.body.classList.add('dashboard-authenticated');
   session.hidden = false;
   loginButton.hidden = true;
   setFeedback('Connected securely. Your access token stays in memory only.', 'success');
@@ -161,6 +162,7 @@ async function completeLogin() {
 
 function logout() {
   accessToken = '';
+  document.body.classList.remove('dashboard-authenticated');
   session.hidden = true;
   loginButton.hidden = false;
   guildsElement.replaceChildren();
