@@ -177,6 +177,7 @@ async function loadServerStats(guildId, guildName) {
   const data = await response.json();
   const guild = data.guilds?.[guildId];
   if (!guild) throw new Error('This server is not available in live telemetry yet.');
+  window.dispatchEvent(new CustomEvent('vybot:server-data', { detail: { guildId, guild, bot: data.bot || {}, updatedAt: data.updatedAt } }));
   panelServerName.textContent = guild.name || guildName || 'Server';
   document.getElementById('dashboard-server-title').textContent = guild.name || guildName || 'Server';
   settingsTitle.textContent = `${guild.name || guildName || 'Server'} security`;

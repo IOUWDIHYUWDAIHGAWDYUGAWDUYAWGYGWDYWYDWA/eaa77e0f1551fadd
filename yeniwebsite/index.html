@@ -118,12 +118,12 @@
             <div class="lbl" data-i18n="trust.cmds">Slash commands</div>
           </div>
           <div class="trust-stat reveal" style="--reveal-delay:80ms">
-            <div class="num">9</div>
+            <div class="num"><span class="accent" data-cat-count>—</span></div>
             <div class="lbl" data-i18n="trust.cats">Categories</div>
           </div>
           <div class="trust-stat reveal" style="--reveal-delay:160ms">
-            <div class="num">5</div>
-            <div class="lbl" data-i18n="trust.shields">Security shields</div>
+            <div class="num"><span class="accent" data-shield-count>—</span></div>
+            <div class="lbl" data-i18n="trust.shields">Security guards</div>
           </div>
           <div class="trust-stat reveal" style="--reveal-delay:240ms">
             <div class="num">SQLite</div>
@@ -429,7 +429,7 @@
 
   <script src="assets/js/data/config.js"></script>
   <script src="assets/js/data/i18n.js"></script>
-  <script type="module" src="assets/js/ui.js"></script>
+  <script type="module" src="assets/js/ui.js?v=1.0.3"></script>
   <script type="module">
     const boot = async () => {
       try {

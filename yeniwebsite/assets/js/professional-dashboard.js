@@ -1,81 +1,343 @@
+/**
+ * VYBot — Professional Dashboard (GERÇEK VERİ)
+ * ---------------------------------------------------------------------------
+ * Tüm istatistikler canlı telemetriden gelir. Bot, her 5 dakikada bir
+ * src/utils/liveDataSync.js ile "live-data" dalındaki live-data.json dosyasına
+ * GERÇEK sunucu verisi yazar (üye sayısı, kanal/rol sayıları, ping, uptime,
+ * liderlik tablosu …). Bu sayfa o dosyayı okur ve Discord OAuth verisini de
+ * ("vybot:server-data" olayı) dinler.
+ *
+ * KURAL (Masterprompt 26 — Real Data Rule): Sahte sayı ASLA gösterilmez.
+ * Veri yoksa "—" ve dürüst boş durum gösterilir.
+ */
 (() => {
   'use strict';
 
   const root = document.getElementById('pro-dashboard');
   if (!root) return;
 
-  const MOCK = {
-    members: 12482,
-    online: 2184,
-    bots: 142,
-    boosts: 87,
-    messages: 8421,
-    latency: 42,
-    uptime: '99.98%',
-    activity: [
-      ['Member joined', '@Solaris#4821', '2m ago', 'member'],
-      ['User was muted', '@Grim#3012', '7m ago', 'mute'],
-      ['Member joined', '@Luna#7710', '12m ago', 'member'],
-      ['Message deleted', '#general', '18m ago', 'delete'],
-      ['User was banned', '@Rogue#9934', '26m ago', 'ban'],
-      ['Role created', 'Moderator', '31m ago', 'role'],
-      ['Message sent', '#bot-commands', '42m ago', 'message'],
-    ],
-    channels: [
-      ['general', '2,843', 92, 'Text Channel'],
-      ['bot-commands', '1,942', 71, 'Text Channel'],
-      ['memes', '1,203', 48, 'Text Channel'],
-      ['music', '892', 36, 'Voice Channel'],
-      ['support', '671', 25, 'Text Channel'],
-    ],
-    membersTop: [
-      ['Luna', '248,542', '73', '👑'],
-      ['Solaris', '198,421', '62', ''],
-      ['Zyro', '176,892', '58', ''],
-      ['Nova', '152,317', '52', ''],
-      ['Rogue', '134,221', '48', ''],
-      ['Pixel', '118,904', '44', ''],
-    ],
-    growth: [28, 34, 31, 42, 48, 45, 53, 59, 58, 67, 72, 76, 74, 81, 88, 91, 96, 104, 108, 112, 119, 123, 131, 139, 147, 156, 165, 177, 188, 204],
-    hourly: [12, 9, 7, 5, 6, 8, 13, 18, 27, 34, 39, 44, 51, 48, 56, 62, 55, 60, 70, 82, 96, 91, 72, 54],
-  };
+  const cfg = window.VYBOT_CONFIG || {};
+  const liveDataUrl = cfg.liveDataUrl || '';
+  const timeoutMs = cfg.liveDataTimeoutMs || 8000;
 
   const icons = {
-    overview: '◉', analytics: '⌁', moderation: '◒', security: '◈', leveling: '✦', economy: '◌', welcome: '⌂', tickets: '□', logs: '≡', settings: '⚙',
-    member: '●', mute: '◐', delete: '▣', ban: '×', role: '◆', message: '▰'
+    overview: '◉', analytics: '⌁', moderation: '◒', security: '◈',
+    leveling: '✦', economy: '◌', welcome: '⌂', tickets: '□', logs: '≡', settings: '⚙',
   };
 
-  const state = { view: new URLSearchParams(location.search).get('view') || 'overview', guild: 'vybots', data: null };
-  const routeViews = ['overview', 'analytics', 'moderation', 'security', 'leveling', 'economy', 'welcome', 'tickets', 'logs', 'settings'];
+  const state = {
+    view: new URLSearchParams(location.search).get('view') || 'overview',
+    guildId: null,
+    live: null,   // live-data.json yükü
+    auth: null,   // vybot:server-data (Discord OAuth child mode)
+    loading: true,
+    error: false,
+  };
 
-  function esc(value) { return String(value).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
-  function metric(label, value, change, icon) { return `<article class="pro-kpi"><div class="pro-kpi-icon">${icon}</div><span>${label}</span><strong>${value}</strong><small><b>+${change}</b> vs. last 30 days</small></article>`; }
-  function lineChart(values) { const max = Math.max(...values); const points = values.map((v, i) => `${(i / (values.length - 1)) * 100},${100 - (v / max) * 78 - 8}`).join(' '); return `<svg class="pro-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Member growth chart"><defs><linearGradient id="line-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2b7fff" stop-opacity=".42"/><stop offset="1" stop-color="#2b7fff" stop-opacity="0"/></linearGradient></defs><polygon points="0,100 ${points} 100,100" fill="url(#line-fill)"/><polyline points="${points}" fill="none" stroke="#4d95ff" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`; }
-  function barChart(values) { return `<div class="pro-bar-chart">${values.map((v) => `<i style="height:${Math.max(10, (v / Math.max(...values)) * 100)}%"></i>`).join('')}</div>`; }
-  function statusRow(label, value, tone = 'good') { return `<div class="pro-health-row"><span><i class="pro-status-dot ${tone}"></i>${label}</span><strong>${value}</strong></div>`; }
+  /* ---------- yardımcılar ---------- */
+  function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  function fmtN(n) { return (Number(n) || 0).toLocaleString('en-US'); }
+
+  function fmtUptime(sec) {
+    const s = Number(sec) || 0;
+    if (s <= 0) return '—';
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  function guildList() {
+    const gs = (state.live && state.live.guilds) || {};
+    return Object.keys(gs).map((id) => gs[id]);
+  }
+
+  function pguild() {
+    if (state.auth && state.auth.guild) return state.auth.guild;
+    const list = guildList();
+    if (!list.length) return null;
+    if (state.guildId) {
+      const found = list.find((g) => String(g.id) === String(state.guildId));
+      if (found) return found;
+    }
+    return list[0];
+  }
+
+  function pbot() {
+    if (state.auth && state.auth.bot && Object.keys(state.auth.bot).length) return state.auth.bot;
+    return (state.live && state.live.bot) || {};
+  }
+
+  function hasLive() { return Boolean(state.live || state.auth); }
+
+  function updatedAt() {
+    return (state.auth && state.auth.updatedAt) || (state.live && state.live.updatedAt) || null;
+  }
+
+  function metric(label, value, live, icon) {
+    return `<article class="pro-kpi"><div class="pro-kpi-icon">${icon}</div><span>${esc(label)}</span><strong>${value}</strong><small>${live ? 'Real VYBot telemetry' : 'Awaiting live telemetry'}</small></article>`;
+  }
+
+  function statusRow(label, value, tone) {
+    return `<div class="pro-health-row"><span><i class="pro-status-dot ${tone || ''}"></i>${esc(label)}</span><strong>${value}</strong></div>`;
+  }
+
+  function emptyChart(text) { return `<div class="pro-chart-empty">${esc(text)}</div>`; }
+
+  function rankCls(i) { return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : ''; }
+
+  function lbRows(leaderboard, max) {
+    const lb = Array.isArray(leaderboard) ? leaderboard.slice(0, max || 6) : [];
+    if (!lb.length) {
+      return '<div class="pro-chart-empty">No leaderboard published yet — ranking appears once members earn XP.</div>';
+    }
+    return lb.map((m, i) => `<div class="pro-member-row ${rankCls(i)}"><b>#${i + 1}</b><em>Lv ${m.level || 0}</em><span>${esc(m.name || 'Unknown')}</span><strong>${fmtN(m.xp)} XP</strong></div>`).join('');
+  }
 
   function nav() {
-    const items = [['overview','Overview'],['analytics','Analytics'],['moderation','Moderation'],['security','Security'],['leveling','Leveling'],['economy','Economy'],['welcome','Welcome'],['tickets','Tickets'],['logs','Logs'],['settings','Settings']];
+    const items = [
+      ['overview', 'Overview'], ['analytics', 'Analytics'], ['moderation', 'Moderation'],
+      ['security', 'Security'], ['leveling', 'Leveling'], ['economy', 'Economy'],
+      ['welcome', 'Welcome'], ['tickets', 'Tickets'], ['logs', 'Logs'], ['settings', 'Settings'],
+    ];
     return items.map(([id, label]) => `<button class="pro-nav-item ${state.view === id ? 'active' : ''}" data-pro-route="${id}"><span>${icons[id]}</span>${label}</button>`).join('');
   }
+function overview() {
+    const guild = pguild();
+    const bot = pbot();
+    const members = guild && guild.memberCount != null ? guild.memberCount : null;
+    const channels = guild && guild.channels != null ? guild.channels : null;
+    const roles = guild && guild.roles != null ? guild.roles : null;
+    const latency = bot.ping != null ? bot.ping : null;
+    const online = guild ? Boolean(guild.botOnline) : null;
+    const updated = updatedAt();
+    const guildName = (guild && guild.name) || 'No server connected';
+    const leaderboard = (guild && guild.leaderboard) || [];
+    const liveNote = hasLive()
+      ? (updated ? `Live data · synced ${new Date(updated).toLocaleString()}` : 'Live data connected')
+      : (state.error ? 'Live telemetry unreachable — dashboard is read-only' : 'Connecting to VYBot live telemetry…');
+    const statusTxt = online === null ? '—' : online ? 'Online' : 'Offline';
+    const statusTone = online === true ? 'good' : online === false ? 'bad' : '';
 
-  function overview() {
-    return `<div class="pro-view-heading"><div><span class="pro-eyebrow">Server overview</span><h1>${esc(state.guild)}</h1><p><i class="pro-status-dot good"></i> Connected <span class="pro-divider">·</span> ${MOCK.members.toLocaleString()} members <span class="pro-divider">·</span> ${MOCK.latency}ms latency</p></div><div class="pro-heading-actions"><button class="pro-button primary">Invite Bot</button><button class="pro-button ghost">Manage</button></div></div><div class="pro-kpi-grid">${metric('Total Members', MOCK.members.toLocaleString(), '12.4%', '♙')}${metric('Online Members', MOCK.online.toLocaleString(), '18.7%', '●')}${metric('Bots', MOCK.bots, '5.2%', '▣')}${metric('Boosts', MOCK.boosts, '16.0%', '◆')}${metric('Messages Today', MOCK.messages.toLocaleString(), '24.3%', '▰')}</div><div class="pro-chart-grid"><section class="pro-card"><div class="pro-card-head"><div><span class="pro-eyebrow">Member growth</span><h2>Community growth</h2></div><button class="pro-select">Last 30 days⌄</button></div><div class="pro-chart-meta"><strong>+12.4%</strong><span>members vs. previous period</span></div><div class="pro-chart-frame">${lineChart(MOCK.growth)}<div class="pro-chart-axis"><span>Apr 12</span><span>Apr 20</span><span>Apr 28</span><span>May 6</span><span>May 10</span></div></div></section><section class="pro-card"><div class="pro-card-head"><div><span class="pro-eyebrow">Server activity</span><h2>Messages per hour</h2></div><button class="pro-select">Last 24 hours⌄</button></div><div class="pro-chart-meta"><strong>8,421</strong><span>messages today</span></div><div class="pro-chart-frame">${barChart(MOCK.hourly)}<div class="pro-chart-axis"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>12AM</span></div></div></section></div><div class="pro-lower-grid"><section class="pro-card"><div class="pro-card-head"><h2>Most active channels</h2><a>View all</a></div>${MOCK.channels.map((c, i) => `<div class="pro-channel-row"><b>${i + 1}</b><span class="pro-channel-icon">#</span><div><strong>${c[0]}</strong><small>${c[3]}</small></div><em>${c[1]} messages</em><i><b style="width:${c[2]}%"></b></i></div>`).join('')}</section><section class="pro-card"><div class="pro-card-head"><h2>Top members</h2><a>View all</a></div>${MOCK.membersTop.map((m, i) => `<div class="pro-member-row"><b class="rank-${i + 1}">${i + 1}</b><span class="pro-avatar">${m[0][0]}</span><div><strong>${m[0]} ${m[3]}</strong><small>Level ${m[2]}</small></div><em>${m[1]} XP</em></div>`).join('')}</section></div>`;
+    return `
+      <div class="pro-view-heading">
+        <div>
+          <span class="pro-eyebrow">Server overview</span>
+          <h1>${esc(guildName)}</h1>
+          <p><i class="pro-status-dot ${statusTone}"></i> ${statusTxt}<span class="pro-divider"> · </span>${members == null ? '—' : fmtN(members)} members<span class="pro-divider"> · </span>${latency == null ? '—' : latency}ms latency</p>
+        </div>
+        <div class="pro-heading-actions">
+          <a class="pro-button primary" href="${esc(cfg.inviteUrl || '#')}" target="_blank" rel="noopener noreferrer">Invite Bot</a>
+        </div>
+      </div>
+      <div class="pro-live-note"><i class="pro-status-dot ${hasLive() ? 'good' : ''}"></i>${esc(liveNote)}</div>
+      <div class="pro-kpi-grid">
+        ${metric('Total Members', members == null ? '—' : fmtN(members), hasLive(), '♙')}
+        ${metric('Channels', channels == null ? '—' : String(channels), hasLive(), '#')}
+        ${metric('Roles', roles == null ? '—' : String(roles), hasLive(), '◆')}
+        ${metric('Latency', latency == null ? '—' : `${latency}ms`, hasLive(), '◉')}
+        ${metric('Bot Status', statusTxt, hasLive(), '▣')}
+      </div>
+      <div class="pro-chart-grid">
+        <section class="pro-card">
+          <div class="pro-card-head"><div><span class="pro-eyebrow">Member growth</span><h2>Community growth</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
+          <div class="pro-chart-meta"><strong>${members == null ? '—' : fmtN(members)}</strong><span>${members == null ? 'single snapshot, no history yet' : 'current members · single snapshot'}</span></div>
+          <div class="pro-chart-frame">${emptyChart('Member history is not published yet — VYBot telemetry records current snapshots every 5 minutes.')}</div>
+        </section>
+        <section class="pro-card">
+          <div class="pro-card-head"><div><span class="pro-eyebrow">Server activity</span><h2>Messages per hour</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
+          <div class="pro-chart-meta"><strong>—</strong><span>message history not published yet</span></div>
+          <div class="pro-chart-frame">${emptyChart('Waiting for message telemetry.')}</div>
+        </section>
+      </div>
+      <div class="pro-lower-grid">
+        <section class="pro-card pro-table-card">
+          <div class="pro-card-head"><div><span class="pro-eyebrow">Leveling</span><h2>Community leaderboard</h2></div></div>
+          ${lbRows(leaderboard, 6)}
+        </section>
+        <section class="pro-card pro-table-card">
+          <div class="pro-card-head"><div><span class="pro-eyebrow">Telemetry</span><h2>Bot status</h2></div></div>
+          ${statusRow('Bot', statusTxt, statusTone)}
+          ${statusRow('Servers', bot.guildCount != null ? fmtN(bot.guildCount) : '—', '')}
+          ${statusRow('Ping', latency == null ? '—' : `${latency}ms`, '')}
+          ${statusRow('Uptime', fmtUptime(bot.uptimeSeconds), '')}
+        </section>
+      </div>`;
+  }
+function analytics() {
+    const guild = pguild();
+    const members = guild && guild.memberCount != null ? guild.memberCount : null;
+    const guildName = (guild && guild.name) || 'No server connected';
+    const has = hasLive();
+    return `
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Member, message, command and voice telemetry for ${esc(guildName)}.</p></div></div>
+      <div class="pro-kpi-grid">
+        ${metric('Total Members', members == null ? '—' : fmtN(members), has, '♙')}
+        ${metric('New Members (30d)', '—', false, '↗')}
+        ${metric('Messages (24h)', '—', false, '▰')}
+        ${metric('Commands Used', '—', false, '⌁')}
+        ${metric('Voice Minutes', '—', false, '◉')}
+      </div>
+      <div class="pro-chart-grid">
+        <section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth</h2><button class="pro-select" type="button">Live snapshot⌄</button></div><div class="pro-chart-frame">${emptyChart('Historical growth is not published yet. This chart activates when VYBot telemetry records history.')}</div></section>
+        <section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2></div><div class="pro-chart-frame">${emptyChart('Message history is not published yet.')}</div></section>
+      </div>`;
   }
 
-  function analytics() { return `<div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Detailed member, message, command and voice telemetry for ${esc(state.guild)}.</p></div></div><div class="pro-kpi-grid">${metric('New Members', '+204', '14.8%', '♙')}${metric('Messages', '8,421', '24.3%', '▰')}${metric('Commands Used', '1,284', '8.1%', '⌁')}${metric('Voice Minutes', '1,742', '11.4%', '◉')}${metric('Retention', '84.6%', '6.2%', '↗')}</div><div class="pro-chart-grid"><section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth · 30 days</h2><button class="pro-select">Daily⌄</button></div><div class="pro-chart-frame">${lineChart(MOCK.growth)}</div></section><section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2></div><div class="pro-chart-frame">${barChart(MOCK.hourly)}</div></section></div>`; }
+  function settingsView() {
+    const guild = pguild();
+    const guildName = (guild && guild.name) || 'No server connected';
+    const rows = [
+      ['Command prefix', 'Slash commands — no prefix needed', '/'],
+      ['Default language', 'Matches each user', 'Auto (TR / EN)'],
+      ['Mod-log channel', 'Set with /modlog', '—'],
+      ['Security guards', 'Anti-nuke, anti-link, anti-swear, anti-spam', 'Available'],
+      ['Leveling engine', 'XP, ranks and level roles', 'Available'],
+      ['Economy engine', 'Balance, daily and leaderboard', 'Available'],
+    ];
+    return `
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">Settings</span><h1>Server configuration</h1><p>Manage VYBot behavior for ${esc(guildName)}.</p></div><button class="pro-button primary" type="button">Open Panel</button></div>
+      <div class="pro-settings-grid">${rows.map(([h, d, v], i) => `<section class="pro-card pro-setting-card"><span class="pro-eyebrow">Setting ${i + 1}</span><h2>${esc(h)}</h2><p>${esc(d)}</p><strong>${esc(v)}</strong><button class="pro-button ghost" type="button">Edit</button></section>`).join('')}</div>`;
+  }
 
-  function settingsView() { return `<div class="pro-view-heading"><div><span class="pro-eyebrow">Settings</span><h1>Server configuration</h1><p>Manage your bot and server preferences from one place.</p></div></div><div class="pro-settings-grid">${['Command prefix','Default language','Mod-log channel','Timezone','Bot permissions','Data retention'].map((x, i) => `<section class="pro-card pro-setting-card"><span class="pro-eyebrow">Setting ${i + 1}</span><h2>${x}</h2><p>${i === 2 ? '#server-logs' : i === 1 ? 'English' : 'Configured for this server'}</p><button class="pro-button ghost">Edit</button></section>`).join('')}</div>`; }
-
-  function genericView(title, eyebrow, description, rows) { return `<div class="pro-view-heading"><div><span class="pro-eyebrow">${eyebrow}</span><h1>${title}</h1><p>${description}</p></div><button class="pro-button primary">Configure</button></div><div class="pro-data-grid">${rows.map((r) => `<section class="pro-card pro-data-card"><span class="pro-data-icon">${r[0]}</span><div><h2>${r[1]}</h2><p>${r[2]}</p></div><strong>${r[3]}</strong></section>`).join('')}</div><section class="pro-card pro-table-card"><div class="pro-card-head"><h2>Recent configuration</h2><button class="pro-select">Filter⌄</button></div><div class="pro-table-empty"><span>✓</span><strong>${title} is ready to configure</strong><p>Your current server context is connected. Detailed controls are available in this section.</p><button class="pro-button primary">Open controls</button></div></section>`; }
+  function genericView(title, eyebrow, description, rows) {
+    return `
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(description)}</p></div><button class="pro-button primary" type="button">Configure</button></div>
+      <div class="pro-data-grid">${rows.map((r) => `<section class="pro-card pro-data-card"><span class="pro-data-icon">${r[0]}</span><div><h2>${esc(r[1])}</h2><p>${esc(r[2])}</p></div><strong>${esc(r[3])}</strong></section>`).join('')}</div>`;
+  }
+const MODULE_VIEWS = {
+    security: ['Security center', 'Protection', 'Keep your server safe with layered, transparent controls.',
+      [['◈', 'Anti-Nuke', 'Channel and role deletion protection', 'Available'],
+       ['⚡', 'Anti-Spam', 'Flood and repeated message protection', 'Available'],
+       ['#', 'Anti-Link', 'Advertising and invite filter', 'Available'],
+       ['!', 'Anti-Swear', 'Configured word filter', 'Available'],
+       ['◌', 'Raid Protection', 'Rapid join detection', 'Available'],
+       ['≡', 'Mod-log', 'Audit history and moderation events', 'Set with /modlog']]],
+    moderation: ['Moderation center', 'Moderation', 'Review warnings, mutes, bans, kicks and timeouts.',
+      [['!', 'Warnings', 'Member warning history (/uyar, /sicil)', '—'],
+       ['◐', 'Mutes', 'Active timeouts (/timeout)', '—'],
+       ['×', 'Bans', 'Current server bans (/ban, /kick)', '—'],
+       ['≡', 'Moderation logs', 'Recent staff actions', 'Available']]],
+    leveling: ['Leveling', 'Engagement', 'Build a more active community with XP, ranks and rewards.',
+      [['✦', 'XP engine', 'Messages converted to XP', 'Available'],
+       ['♙', 'Leaderboard', 'Top member ranking (/liderlik)', 'Real data → overview'],
+       ['◆', 'Role rewards', 'Automatic level roles (/seviye-odul)', 'Available']]],
+    economy: ['Economy', 'Engagement', 'Manage currency, balances, transactions and rewards.',
+      [['◌', 'Currency', 'Server economy (/bakiye)', 'Available'],
+       ['▣', 'Balances', 'Member balances and daily rewards', 'Available'],
+       ['↗', 'Transactions', 'Recent economy activity', '—']]],
+    welcome: ['Welcome', 'Onboarding', 'Make every new member feel at home.',
+      [['✦', 'Welcome message', 'First impression content', 'Not configured'],
+       ['⌂', 'Auto role', 'New member role (/otorol)', 'Available'],
+       ['#', 'Welcome channel', 'Where members arrive', 'Not configured']]],
+    tickets: ['Tickets', 'Support', 'Give your community a clear path to help.',
+      [['□', 'Open tickets', 'Active support requests', '—'],
+       ['✓', 'Closed tickets', 'Resolved requests', '—'],
+       ['◈', 'Support team', 'Staff with ticket access', '—']]],
+    logs: ['Logs', 'Audit', 'Message, member, channel and role events.',
+      [['≡', 'Mod-log', 'Moderation event log (/modlog)', 'Available'],
+       ['▣', 'Message logs', 'Deleted / edited messages', '—'],
+       ['◆', 'Role & channel logs', 'Permission changes', '—']]],
+  };
+function contentFor() {
+    if (state.view === 'overview') return overview();
+    if (state.view === 'analytics') return analytics();
+    if (state.view === 'settings') return settingsView();
+    const mv = MODULE_VIEWS[state.view];
+    if (mv) return genericView(...mv);
+    return overview();
+  }
 
   function render() {
-    const content = state.view === 'overview' ? overview() : state.view === 'analytics' ? analytics() : state.view === 'settings' ? settingsView() : state.view === 'security' ? genericView('Security center', 'Protection', 'Keep your server safe with layered, transparent controls.', [['◈','Anti-Nuke','Channel and role deletion protection','Active'],['⚡','Anti-Spam','Flood and repeated message protection','Active'],['#','Anti-Link','Advertising and invite filter','Active'],['!','Anti-Swear','Configured word filter','Active'],['◌','Raid Protection','Rapid join detection','Ready'],['≡','Mod-log','Audit history and moderation events','Configured']]) : state.view === 'moderation' ? genericView('Moderation center','Moderation','Review warnings, mutes, bans, kicks and timeouts.', [['!','Warnings','Member warning history','0'],['◐','Mutes','Active timeouts','0'],['×','Bans','Current server bans','0'],['≡','Moderation logs','Recent staff actions','Live']]) : state.view === 'leveling' ? genericView('Leveling','Engagement','Build a more active community with XP, ranks and rewards.', [['✦','XP engine','Messages converted to XP','Active'],['♙','Leaderboard','Top member ranking','Live'],['◆','Role rewards','Automatic level roles','Ready']]) : state.view === 'economy' ? genericView('Economy','Engagement','Manage currency, balances, transactions and rewards.', [['◌','Currency','Server economy','Ready'],['▣','Balances','Member balances','Live'],['↗','Transactions','Recent economy activity','0']]) : state.view === 'welcome' ? genericView('Welcome','Onboarding','Make every new member feel at home.', [['✦','Welcome message','First impression content','Ready'],['⌂','Auto role','New member role','Not set'],['#','Welcome channel','Where members arrive','Not set']]) : state.view === 'tickets' ? genericView('Tickets','Support','Give your community a clear path to help.', [['□','Open tickets','Active support requests','0'],['✓','Closed tickets','Resolved requests','0'],['◈','Support team','Staff access','Ready']]) : state.view === 'logs' ? genericView('Server logs','Audit trail','Review important Discord events and bot actions.', [['≡','Mod-log','Moderation events','Live'],['◈','Security events','Protection triggers','Live'],['▰','Message events','Deleted and edited messages','Ready']]) : overview();
-    root.innerHTML = `<div class="pro-app"><aside class="pro-sidebar"><div class="pro-brand"><span>V</span><strong>VyBots</strong></div><button class="pro-server-select"><span class="pro-server-avatar">V</span><span><strong>${esc(state.guild)}</strong><small>Connected server</small></span><b>⌄</b></button><nav class="pro-main-nav">${nav()}</nav><div class="pro-sidebar-footer"><span class="pro-status-dot good"></span><span>Bot online<small>All systems operational</small></span></div></aside><main class="pro-main"><header class="pro-header"><div class="pro-breadcrumb">Server workspace <span>/</span> ${esc(state.guild)}</div><div class="pro-header-actions"><label class="pro-search">⌕ <input placeholder="Search server..." aria-label="Search server"></label><button class="pro-icon-button">♧</button><button class="pro-user-button"><span class="pro-avatar">V</span> Vynex⌄</button></div></header><div class="pro-content">${content}</div></main><aside class="pro-right-rail"><section class="pro-rail-card"><div class="pro-rail-title"><h2>Server health</h2><span>›</span></div>${statusRow('Bot status','Online')}${statusRow('API status','Operational')}${statusRow('Latency',`${MOCK.latency}ms`)}${statusRow('Uptime',MOCK.uptime)}</section><section class="pro-rail-card"><div class="pro-rail-title"><h2>Recent activity</h2><a>View all</a></div>${MOCK.activity.slice(0, 7).map((a) => `<div class="pro-activity-row"><span class="pro-activity-icon ${a[3]}">${icons[a[3]] || '•'}</span><div><strong>${a[0]}</strong><small>${a[1]}</small></div><time>${a[2]}</time></div>`).join('')}</section></aside></div>`;
-    root.querySelectorAll('[data-pro-route]').forEach((button) => button.addEventListener('click', () => { state.view = button.dataset.proRoute; const url = new URL(location.href); url.searchParams.set('view', state.view); history.pushState({}, '', url); render(); }));
+    const guild = pguild();
+    const bot = pbot();
+    const online = guild ? Boolean(guild.botOnline) : null;
+    const updated = updatedAt();
+    const leaderboard = (guild && guild.leaderboard) || [];
+    const guildName = (guild && guild.name) || 'No server connected';
+    const list = guildList();
+    const statusTxt = online === null ? '—' : online ? 'Online' : 'Offline';
+    const statusTone = online === true ? 'good' : online === false ? 'bad' : '';
+    const latency = bot.ping != null ? `${bot.ping}ms` : '—';
+
+    const guildChips = list.length > 1
+      ? `<div class="pro-guild-list">${list.map((g) => `<button class="pro-guild-chip ${guild && String(g.id) === String(guild.id) ? 'active' : ''}" type="button" data-guild-id="${esc(g.id)}">${esc(g.name)}</button>`).join('')}</div>`
+      : '';
+
+    const activity = leaderboard.length
+      ? leaderboard.slice(0, 5).map((m, i) => `<div class="pro-member-row ${rankCls(i)}"><b>#${i + 1}</b><em>Lv ${m.level || 0}</em><span>${esc(m.name || 'Unknown')}</span><strong>${fmtN(m.xp)} XP</strong></div>`).join('')
+      : '<div class="pro-chart-empty">No activity published yet.</div>';
+
+    root.innerHTML = `<div class="pro-app">
+      <aside class="pro-sidebar">
+        <div class="pro-brand"><span>V</span><strong>VyBots</strong></div>
+        <button class="pro-server-select" type="button"><span class="pro-server-avatar">${esc(((guild && guild.name) || 'V')[0].toUpperCase())}</span><span><strong>${esc(guildName)}</strong><small>${hasLive() ? (guild ? 'Connected server' : 'No live telemetry') : 'Waiting for telemetry'}</small></span><b>⌄</b></button>
+        ${guildChips}
+        <nav class="pro-main-nav">${nav()}</nav>
+        <div class="pro-sidebar-footer"><span class="pro-status-dot ${statusTone}"></span><span>${statusTxt === '—' ? 'No telemetry' : (statusTxt === 'Online' ? 'Bot online' : 'Bot offline')}<small>${updated ? 'Synced ' + new Date(updated).toLocaleTimeString() : (hasLive() ? 'Waiting sync…' : 'Waiting for live data')}</small></span></div>
+      </aside>
+      <main class="pro-main">
+        <header class="pro-header">
+          <div class="pro-breadcrumb">Server workspace <span>/</span> ${esc(guildName)}</div>
+          <div class="pro-header-actions"><label class="pro-search">⌕ <input placeholder="Search server..." aria-label="Search server"></label><button class="pro-icon-button" type="button">♧</button><button class="pro-user-button" type="button"><span class="pro-avatar">?</span> Guest⌄</button></div>
+        </header>
+        <div class="pro-content">${contentFor()}</div>
+      </main>
+      <aside class="pro-right-rail">
+        <section class="pro-rail-card"><div class="pro-rail-title"><h2>Server health</h2><span>›</span></div>${statusRow('Bot status', statusTxt, statusTone)}${statusRow('API status', hasLive() ? 'Operational' : 'Awaiting telemetry', hasLive() ? 'good' : '')}${statusRow('Latency', latency, '')}${statusRow('Uptime', fmtUptime(bot.uptimeSeconds), '')}</section>
+        <section class="pro-rail-card"><div class="pro-rail-title"><h2>Recent activity</h2><span>›</span></div>${activity}</section>
+      </aside>
+    </div>`;
+
+    root.querySelectorAll('[data-pro-route]').forEach((button) =>
+      button.addEventListener('click', () => {
+        state.view = button.dataset.proRoute;
+        const url = new URL(location.href);
+        url.searchParams.set('view', state.view);
+        history.pushState({}, '', url);
+        render();
+      })
+    );
+    root.querySelectorAll('[data-guild-id]').forEach((button) =>
+      button.addEventListener('click', () => {
+        state.guildId = button.dataset.guildId;
+        render();
+      })
+    );
   }
 
-  window.addEventListener('popstate', () => { state.view = new URLSearchParams(location.search).get('view') || 'overview'; render(); });
-  window.addEventListener('vybot:server-data', (event) => { state.data = event.detail; render(); });
+  function loadLive() {
+    if (!liveDataUrl) { state.loading = false; state.error = true; render(); return; }
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
+    Promise.race([
+      fetch(liveDataUrl, { cache: 'no-store' }).then((r) => {
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }),
+      timeout,
+    ])
+      .then((data) => { state.live = data; state.loading = false; state.error = false; render(); })
+      .catch(() => { state.loading = false; state.error = true; render(); });
+  }
+
+  window.addEventListener('popstate', () => {
+    state.view = new URLSearchParams(location.search).get('view') || 'overview';
+    render();
+  });
+  window.addEventListener('vybot:server-data', (event) => {
+    state.auth = event.detail || null;
+    state.loading = false;
+    state.error = false;
+    render();
+  });
+
   render();
+  loadLive();
 })();

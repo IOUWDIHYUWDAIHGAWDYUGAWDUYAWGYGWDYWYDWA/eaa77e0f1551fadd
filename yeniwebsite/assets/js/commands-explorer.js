@@ -19,8 +19,14 @@
 
   const L = window.VYBOT_LANG || { t: (k) => k, current: 'en' };
   const t = (k) => L.t(k);
+  const curLang = () => L.current || 'en';
+  const bi = (v) => (v && typeof v === 'object') ? (v[curLang()] || v.en) : v;
 
-  const catLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label || id;
+  const catLabel = (id) => {
+    const cat = CATEGORIES.find((c) => c.id === id);
+    if (!cat) return id;
+    return typeof cat.label === 'object' ? bi(cat.label) : cat.label;
+  };
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (m) => (
@@ -53,9 +59,10 @@
     const q = searchEl.value.trim().toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en');
     return COMMANDS.filter((c) => {
       const catOK = activeCat === 'tumu' || c.category === activeCat;
+      const desc = (c.desc && typeof c.desc === 'object') ? (c.desc[lang] || c.desc.en) : String(c.desc || '');
       const qOK = !q
         || c.name.toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en').includes(q)
-        || c.description.toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en').includes(q);
+        || desc.toLocaleLowerCase(lang === 'tr' ? 'tr' : 'en').includes(q);
       return catOK && qOK;
     });
   }
@@ -74,7 +81,7 @@
       <button type="button" class="cmd-item${c.name === activeName ? ' selected' : ''}"
               data-cmd="${esc(c.name)}" aria-pressed="${c.name === activeName}">
         <span class="ci-name"><span class="slash">/</span>${esc(c.name)}</span>
-        <span class="ci-desc">${esc(c.description)}</span>
+        <span class="ci-desc">${esc(bi(c.desc))}</span>
         <span class="ci-cat">${esc(catLabel(c.category))}</span>
       </button>`).join('');
   }
@@ -85,7 +92,7 @@
     if (!c) return;
     activeName = c.name;
     const perm = c.permission
-      ? `<span>${esc(c.permission)}</span>`
+      ? `<span>${esc(bi(c.permission))}</span>`
       : `<span class="free">${t('cmd.free')}</span>`;
     detailEl.innerHTML = `
       <div class="cd-head">
@@ -95,7 +102,7 @@
       <div class="cd-body">
         <div class="cd-sec">
           <div class="cd-label">${t('cmd.desc')}</div>
-          <p class="cd-desc">${esc(c.description)}</p>
+          <p class="cd-desc">${esc(bi(c.desc))}</p>
         </div>
         <div class="cd-sec">
           <div class="cd-label">${t('cmd.usage')}</div>
@@ -128,7 +135,7 @@
     filterEl.innerHTML = chips.map((c) => `
       <button type="button" class="cat-chip${c.id === activeCat ? ' active' : ''}"
               data-cat="${esc(c.id)}" aria-pressed="${c.id === activeCat}">
-        ${esc(c.label)}<span class="cnt">${c.cnt}</span>
+        ${esc(typeof c.label === 'object' ? bi(c.label) : c.label)}<span class="cnt">${c.cnt}</span>
       </button>`).join('');
   }
 

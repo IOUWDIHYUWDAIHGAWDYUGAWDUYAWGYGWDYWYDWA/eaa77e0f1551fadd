@@ -76,17 +76,26 @@
     livePanels.forEach((p) => p.classList.add('live'));
   }
 
-  /* ---------- Gerçek komut sayacı (uydurma sayı YOK) ---------- */
+  /* ---------- Gerçek komut/kategori sayaçları (uydurma sayı YOK) ---------- */
   const countEls = document.querySelectorAll('[data-cmd-count]');
-  if (countEls.length) {
+  const catEls = document.querySelectorAll('[data-cat-count]');
+  const shieldEls = document.querySelectorAll('[data-shield-count]');
+  if (countEls.length || catEls.length) {
     import('./data/commands.js')
       .then((mod) => {
-        countEls.forEach((el) => (el.textContent = String(mod.COMMANDS.length)));
+        const commands = mod.COMMANDS || [];
+        countEls.forEach((el) => (el.textContent = String(commands.length)));
+        const categories = new Set(commands.map((c) => c.category).filter(Boolean));
+        catEls.forEach((el) => (el.textContent = String(categories.size)));
       })
       .catch(() => {
-        countEls.forEach((el) => (el.closest('.trust-stat')?.remove()));
+        countEls.forEach((el) => el.closest('.trust-stat')?.remove());
+        catEls.forEach((el) => el.closest('.trust-stat')?.remove());
       });
   }
+  /* Gerçek güvenlik kalkanı sayısı — src/commands/security/guvenlik.js:
+   * anti-nuke, anti-link, anti-swear (anti-küfür), anti-spam → 4 */
+  if (shieldEls.length) shieldEls.forEach((el) => (el.textContent = '4'));
 
   /* ---------- Footer yılı ---------- */
   document.querySelectorAll('[data-year]').forEach((el) => {

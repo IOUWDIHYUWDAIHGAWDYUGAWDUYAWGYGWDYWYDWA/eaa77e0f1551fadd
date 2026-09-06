@@ -38,6 +38,7 @@
 .pro-view-heading p { margin: 0; color: #8191ae; font-size: 12px; }
 .pro-eyebrow { display: block; color: #629dff; font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .pro-heading-actions { display: flex; gap: 9px; }
+.pro-live-note { display: inline-flex; align-items: center; gap: 7px; margin: -10px 0 14px; color: #79a5d8; font-size: 10px; }
 .pro-button { display: inline-flex; align-items: center; justify-content: center; padding: 10px 15px; border: 1px solid rgba(146,168,216,.18); border-radius: 8px; color: #dce7fa; background: rgba(146,168,216,.06); font: inherit; font-size: 11px; font-weight: 700; }
 .pro-button.primary { border-color: #347ce9; background: linear-gradient(180deg,#3f8dff,#2467ce); color: white; box-shadow: 0 7px 20px rgba(43,127,255,.2); }
 .pro-button:hover { transform: translateY(-1px); }
@@ -63,6 +64,7 @@
 .pro-bar-chart { display: flex; align-items: end; gap: 5px; height: 160px; padding: 12px 7px 0; }
 .pro-bar-chart i { flex: 1; min-width: 3px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg,#4d95ff,#1e55ad); box-shadow: 0 0 10px rgba(43,127,255,.16); }
 .pro-chart-axis { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; color: #667895; font-size: 9px; }
+.pro-chart-empty { display: grid; place-items: center; height: 100%; color: #71839f; font-size: 11px; text-align: center; }
 .pro-lower-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; margin-bottom: 15px; }
 .pro-channel-row { display: grid; grid-template-columns: 22px 20px minmax(0,1fr) auto; align-items: center; gap: 7px; min-height: 46px; border-bottom: 1px solid rgba(146,168,216,.08); color: #dbe6f7; font-size: 11px; }
 .pro-channel-row > b, .pro-member-row > b { color: #557091; font-size: 10px; text-align: center; }
@@ -111,3 +113,20 @@
 @media (max-width: 1250px) { .pro-app { grid-template-columns: 190px minmax(0,1fr) 250px; } .pro-kpi-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 900px) { .pro-app { grid-template-columns: 178px minmax(0,1fr); } .pro-right-rail { display: none; } .pro-chart-grid, .pro-lower-grid { grid-template-columns: 1fr; } .pro-data-grid, .pro-settings-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 640px) { .pro-app { display: block; } .pro-sidebar { border-right: 0; border-bottom: 1px solid rgba(146,168,216,.11); } .pro-main-nav { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-sidebar-footer { display: none; } .pro-header { height: auto; min-height: 58px; padding: 12px 16px; } .pro-header-actions { gap: 5px; } .pro-search { width: 120px; } .pro-user-button { display: none; } .pro-content { padding: 20px 14px 35px; } .pro-view-heading { align-items: start; flex-direction: column; } .pro-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-kpi:last-child { grid-column: span 2; } .pro-data-grid, .pro-settings-grid { grid-template-columns: 1fr; } }
+/* VYBot — gerçek veri eklentileri */
+.pro-live-note { display: flex; align-items: center; gap: 8px; padding: 9px 13px; margin-bottom: 14px; border: 1px solid rgba(55,178,120,.18); border-radius: 9px; background: rgba(55,178,120,.07); color: #a9dcc2; font-size: 10px; }
+.pro-guild-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 10px; }
+.pro-guild-chip { font-size: 10px; padding: 4px 9px; border-radius: 999px; border: 1px solid rgba(146,168,216,.18); color: #8496b4; background: transparent; cursor: pointer; }
+.pro-guild-chip:hover { border-color: #2b7fff; color: #dbe9ff; }
+.pro-guild-chip.active { border-color: #2b7fff; color: #fff; background: rgba(43,127,255,.14); }
+.pro-table-card .pro-health-row { padding: 7px 2px; }
+.pro-table-card .pro-health-row:first-child { border-top: 0; }
+.pro-member-row b { min-width: 22px; font-variant-numeric: tabular-nums; }
+.pro-member-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dde8f9; font-weight: 600; }
+.pro-member-row > strong { font-variant-numeric: tabular-nums; color: #65a7ff; font-size: 10px; white-space: nowrap; }
+.pro-set-value { display: block; margin: 4px 0 0; color: #55e0a4; font-size: 11px; font-weight: 700; }
+.pro-card.pro-setting-card > strong { display: block; color: #55e0a4; font-size: 11px; margin-top: 6px; }
+@media (max-width: 640px) {
+  .pro-guild-list { padding: 2px 10px 8px; }
+  .pro-member-row { grid-template-columns: 20px 26px minmax(0,1fr) auto; }
+}

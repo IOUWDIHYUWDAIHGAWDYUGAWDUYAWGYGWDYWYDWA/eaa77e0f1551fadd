@@ -53,15 +53,18 @@
   ])
     .then((data) => {
       const guilds = Object.values(data.guilds || {});
-      const botOnline = guilds.some((g) => g.botOnline) || data.bot?.online === true;
+      const bot = data.bot || {};
+      const hasBotPayload = Boolean(data.updatedAt) || typeof bot.guildCount === 'number' || typeof bot.ping === 'number';
+      const botOnline = guilds.some((g) => g.botOnline) || hasBotPayload;
       const totalMembers = guilds.reduce((sum, g) => sum + (g.memberCount || 0), 0);
+      const serverCount = typeof bot.guildCount === 'number' ? bot.guildCount : guilds.length;
       const updated = data.updatedAt ? new Date(data.updatedAt) : null;
 
       if (botOnline) {
         setBanner('ok', 'Tüm sistemler çalışıyor', updated
           ? 'Canlı veri · Son güncelleme: ' + updated.toLocaleString('tr-TR')
           : 'Canlı veri kaynağından alındı');
-        setCard('bot', 'ok', guilds.length ? `${guilds.length} sunucu aktif` : 'Bot çevrimiçi');
+        setCard('bot', 'ok', (serverCount || guilds.length) ? `${serverCount || guilds.length} sunucu aktif` : 'Bot çevrimiçi');
         setCard('database', 'ok', 'SQLite bağlantısı aktif');
         setCard('api', 'ok', totalMembers ? `${totalMembers.toLocaleString('tr-TR')} üyeye hizmet veriyor` : 'Discord API bağlantısı aktif');
         setCard('web', 'ok', 'Statik site çalışıyor');

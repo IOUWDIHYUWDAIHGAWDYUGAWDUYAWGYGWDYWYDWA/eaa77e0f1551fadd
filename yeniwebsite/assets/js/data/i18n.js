@@ -54,7 +54,7 @@ window.VYBOT_I18N = {
     'trust.tagline': 'Built for communities that want more from Discord.',
     'trust.cmds': 'Slash commands',
     'trust.cats': 'Categories',
-    'trust.shields': 'Security shields',
+    'trust.shields': 'Security guards',
     'trust.db': 'Persistent data',
 
     'feat.eyebrow': 'Features',
