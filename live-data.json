@@ -1,12 +1,12 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-06T16:41:31.578Z",
+  "updatedAt": "2026-09-06T16:43:02.946Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 2761,
+    "uptimeSeconds": 16,
     "guildCount": 1,
-    "ping": 90
+    "ping": 91
   },
   "guilds": {
     "1536835757132751048": {
@@ -17,32 +17,9 @@
       "channels": 5,
       "roles": 2,
       "botOnline": true,
-      "settings": {
-        "guild_id": "1536835757132751048",
-        "mod_log_channel": null,
-        "welcome_channel": null,
-        "welcome_message": "Sunucumuza hoş geldin {user}!",
-        "leave_channel": null,
-        "autorole_id": null,
-        "verify_role_id": null,
-        "verify_channel_id": null,
-        "anti_nuke": 1,
-        "anti_link": 1,
-        "anti_swear": 1,
-        "anti_spam": 1,
-        "level_system": 1
-      },
+      "settings": {},
       "bridge": null,
-      "leaderboard": [
-        {
-          "rank": 1,
-          "id": "918541990877089842",
-          "name": "Vynex",
-          "avatar": "https://cdn.discordapp.com/avatars/918541990877089842/5560bed278015b4e41ce8aba94e85b2e.webp?size=64",
-          "level": 0,
-          "xp": 16
-        }
-      ]
+      "leaderboard": []
     }
   }
 }
