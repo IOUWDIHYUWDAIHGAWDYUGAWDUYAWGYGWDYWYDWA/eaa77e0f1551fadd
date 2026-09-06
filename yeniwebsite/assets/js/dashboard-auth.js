@@ -150,7 +150,7 @@ function renderGuilds(guilds) {
 }
 
 function openGuildWindow(guildId) {
-  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage`, '_blank', 'popup,width=1280,height=900,resizable=yes,scrollbars=yes');
+  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=625defb`, '_blank', 'popup,width=1280,height=900,resizable=yes,scrollbars=yes');
   if (!child) {
     setFeedback('Allow pop-ups to open the server dashboard.', 'error');
     return;
