@@ -112,6 +112,25 @@ if (!fs.existsSync(deployPath) || !fs.existsSync(indexPath)) {
   process.exit(1);
 }
 
+const configPath = path.join(srcDir, 'config.js');
+if (fs.existsSync(configPath)) {
+  const original = fs.readFileSync(configPath, 'utf8');
+  try {
+    new Function(original);
+  } catch (err) {
+    console.log('config.js syntax hatasi, virgul yamasi deneniyor:', err.message);
+    const patched = original.replace(/([^,\s])(\s*\r?\n\s*)(apiPort\s*:)/, '$1,$2$3');
+    try {
+      new Function(patched);
+      fs.writeFileSync(configPath, patched);
+      console.log('config.js duzeltildi (apiPort oncesi virgul).');
+    } catch (err2) {
+      console.error('config.js yama basarisiz:', err2.message);
+      process.exit(1);
+    }
+  }
+}
+
 fs.rmSync(tmpDir, { recursive: true });
 fs.unlinkSync('bundle.zip');
 console.log('Bot kaynak kodu hazir.');
