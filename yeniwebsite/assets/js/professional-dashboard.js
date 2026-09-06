@@ -22,7 +22,8 @@
 
   const icons = {
     overview: '◉', analytics: '⌁', moderation: '◒', security: '◈',
-    leveling: '✦', economy: '◌', welcome: '⌂', tickets: '□', logs: '≡', settings: '⚙',
+    leveling: '✦', economy: '◌', welcome: '⌂', music: '♫', giveaway: '✧',
+    roles: '◆', tickets: '□', tools: '≡', logs: '☷', settings: '⚙',
   };
 
   const state = {
@@ -273,7 +274,9 @@
     const items = [
       ['overview', 'Overview'], ['analytics', 'Analytics'], ['moderation', 'Moderation'],
       ['security', 'Security'], ['leveling', 'Leveling'], ['economy', 'Economy'],
-      ['welcome', 'Welcome'], ['tickets', 'Tickets'], ['logs', 'Logs'], ['settings', 'Settings'],
+      ['welcome', 'Welcome'], ['music', 'Music'], ['giveaway', 'Giveaway'],
+      ['roles', 'Role Panels'], ['tickets', 'Tickets'], ['tools', 'Tools'],
+      ['logs', 'Logs'], ['settings', 'Settings'],
     ];
     return items.map(([id, label]) => `<button class="pro-nav-item ${state.view === id ? 'active' : ''}" data-pro-route="${id}"><span>${icons[id]}</span>${label}</button>`).join('');
   }
@@ -453,6 +456,22 @@ const MODULE_VIEWS = {
       [['□', 'Open tickets', 'Active support requests', '—'],
        ['✓', 'Closed tickets', 'Resolved requests', '—'],
        ['◈', 'Support team', 'Staff with ticket access', '—']]],
+    music: ['Music', 'Voice', 'Manage the VYBot voice player and queue defaults.',
+      [['♫', 'Music player', 'Play and control voice audio (/cal)', 'Available'],
+       ['◌', 'Queue', 'View and manage the current queue (/kuyruk)', 'Available'],
+       ['◉', 'Voice controls', 'Skip, stop and leave voice channels', 'Available']]],
+    giveaway: ['Giveaway', 'Engagement', 'Create fair, button-based community giveaways.',
+      [['✧', 'Giveaway engine', 'Start giveaways with /cekilis', 'Available'],
+       ['#', 'Winner count', 'Configure default winners and duration', 'Configurable'],
+       ['✓', 'Entry tracking', 'Track button entries and select winners', 'Available']]],
+    roles: ['Role Panels', 'Community', 'Let members choose roles from interactive panels.',
+      [['◆', 'Role panel', 'Create a button role panel (/rol-panel)', 'Available'],
+       ['♙', 'Self-assign roles', 'Manage selectable server roles', 'Configurable'],
+       ['#', 'Panel channel', 'Choose where role panels are published', 'Configurable']]],
+    tools: ['Tools', 'Utilities', 'Server information and bot utility commands.',
+      [['⌁', 'Server info', 'Inspect server and bot status (/sunucu)', 'Available'],
+       ['◉', 'Bot status', 'Latency, uptime and gateway health (/sistem)', 'Live'],
+       ['?', 'Help', 'Browse all available VYBot commands (/yardim)', 'Available']]],
     logs: ['Logs', 'Audit', 'Message, member, channel and role events.',
       [['≡', 'Mod-log', 'Moderation event log (/modlog)', 'Available'],
        ['▣', 'Message logs', 'Deleted / edited messages', '—'],
