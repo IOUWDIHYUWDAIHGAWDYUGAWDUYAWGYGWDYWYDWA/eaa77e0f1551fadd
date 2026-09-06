@@ -127,11 +127,46 @@
       const value = guild && guild[key];
       if (Array.isArray(value) && value.length > 1) return value;
     }
+    const stored = telemetryHistory(guild);
+    if (keys.some((key) => key.toLowerCase().includes('member'))) return stored.members;
+    if (keys.some((key) => key.toLowerCase().includes('message') || key.toLowerCase().includes('activity'))) return stored.messages;
     return [];
   }
 
+  function telemetryHistory(guild) {
+    const id = guild && guild.id ? String(guild.id) : 'default';
+    const key = `vybot_telemetry_history_${id}`;
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || '{}');
+      return {
+        members: Array.isArray(value.members) ? value.members : [],
+        messages: Array.isArray(value.messages) ? value.messages : [],
+      };
+    } catch (_) {
+      return { members: [], messages: [] };
+    }
+  }
+
+  function recordTelemetryHistory(data) {
+    const guilds = data && data.guilds ? Object.values(data.guilds) : [];
+    guilds.forEach((guild) => {
+      const id = guild && guild.id ? String(guild.id) : '';
+      if (!id) return;
+      const history = telemetryHistory(guild);
+      const memberValue = Number(guild.memberCount);
+      const messageValue = Number(guild.messages24h ?? guild.messages ?? guild.messageCount);
+      if (Number.isFinite(memberValue)) history.members.push({ value: memberValue, timestamp: data.updatedAt });
+      if (Number.isFinite(messageValue)) history.messages.push({ value: messageValue, timestamp: data.updatedAt });
+      history.members = history.members.slice(-24);
+      history.messages = history.messages.slice(-24);
+      try { localStorage.setItem(`vybot_telemetry_history_${id}`, JSON.stringify(history)); } catch (_) { /* storage may be blocked */ }
+    });
+  }
+
   function historyChart(values, label) {
-    const chart = chartPoints(values, '#55e0a4');
+    let points = listValue(values);
+    if (points.length === 1) points = [{ value: 0 }, points[0]];
+    const chart = chartPoints(points, '#55e0a4');
     return chart || emptyChart(`${label} history is collecting — the next bot sync will add the first points.`);
   }
 
@@ -759,6 +794,7 @@ function contentFor(rootEl) {
         if (!silent || key !== state.lastKey) {
           state.lastKey = key;
           state.live = data;
+          recordTelemetryHistory(data);
           state.loading = false;
           state.error = false;
           render();
