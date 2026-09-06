@@ -183,6 +183,22 @@ async function loadServerStats(guildId, guildName) {
   document.querySelector('[data-stat="roles"]').textContent = String(guild.roles || 0);
   document.querySelector('[data-stat="bot"]').textContent = guild.botOnline ? 'Online' : 'Offline';
   document.querySelector('[data-stat="updated"]').textContent = data.updatedAt ? `Synced ${new Date(data.updatedAt).toLocaleTimeString()}` : 'Live telemetry';
+  document.querySelector('[data-stat="health-bot"]').textContent = guild.botOnline ? 'Online' : 'Offline';
+  document.querySelector('[data-stat="ping"]').textContent = data.bot?.ping >= 0 ? `${data.bot.ping} ms` : '--';
+  document.querySelector('[data-stat="uptime"]').textContent = data.bot?.uptimeSeconds ? formatUptime(data.bot.uptimeSeconds) : '--';
+  ['anti_nuke', 'anti_link', 'anti_spam'].forEach((key) => {
+    const value = guild.settings?.[key];
+    document.querySelector(`[data-coverage="${key}"]`).textContent = value === 1 ? 'Active' : value === 0 ? 'Off' : 'Unknown';
+  });
+  document.querySelector('[data-coverage="mod_log_channel"]').textContent = guild.settings?.mod_log_channel ? 'Configured' : 'Not set';
+  document.getElementById('server-activity').innerHTML = `<div class="activity-item"><i></i><span>Bot telemetry synced</span><time>${data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString() : 'now'}</time></div><div class="activity-item"><i></i><span>${guild.memberCount || 0} members tracked</span><time>Live</time></div><div class="activity-item"><i></i><span>${guild.botOnline ? 'Bot is online and responding' : 'Bot appears offline'}</span><time>Live</time></div>`;
+}
+
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 function selectCategory(category) {

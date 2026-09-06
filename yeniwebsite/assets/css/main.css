@@ -1378,6 +1378,13 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .panel-server span:last-child { display: grid; gap: 2px; min-width: 0; }
 .panel-server strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .panel-server small { color: var(--text-3); font-size: 11px; }
+.health-card { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); }
+.health-card-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
+.health-card-head span { color: #5ee6ad; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.health-row { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; color: var(--text-2); font-size: 11px; }
+.health-row span { display: flex; align-items: center; gap: 6px; }
+.health-row strong { color: var(--text); font-size: 11px; }
+.health-dot { width: 6px; height: 6px; border-radius: 50%; background: #35d08c; box-shadow: 0 0 7px rgba(53,208,140,.7); }
 .panel-back { width: 100%; margin: 18px 0 22px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); text-align: left; font-size: 12px; }
 .panel-back:hover { color: var(--text); border-color: var(--accent-line); background: var(--accent-soft); }
 .panel-nav { display: grid; gap: 4px; }
@@ -1399,6 +1406,21 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
 .dashboard-child main { padding-top: 0; }
 .panel-live { display: inline-flex; align-items: center; gap: 7px; color: #5ee6ad; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .panel-live i { width: 7px; height: 7px; border-radius: 50%; background: #35d08c; box-shadow: 0 0 10px rgba(53, 208, 140, .75); }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr); gap: 12px; margin-bottom: 30px; }
+.overview-card { min-height: 190px; padding: 18px; border: 1px solid var(--border); border-radius: var(--r-md); background: linear-gradient(180deg, rgba(17,26,48,.72), rgba(11,16,29,.8)); }
+.overview-card-head { display: flex; justify-content: space-between; gap: 16px; align-items: start; margin-bottom: 16px; }
+.overview-card .eyebrow { margin: 0 0 6px; font-size: 10px; }
+.overview-card h3 { font-size: 18px; }
+.live-chip { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 10px; white-space: nowrap; }
+.live-chip i { width: 6px; height: 6px; border-radius: 50%; background: #35d08c; }
+.activity-list { display: grid; gap: 0; }
+.activity-item { display: grid; grid-template-columns: 10px 1fr auto; gap: 9px; align-items: center; padding: 11px 0; border-top: 1px solid var(--border); color: var(--text-2); font-size: 12px; }
+.activity-item i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-bright); box-shadow: 0 0 8px var(--accent); }
+.activity-item time { color: var(--text-3); font-size: 10px; }
+.activity-empty { padding: 22px 0; color: var(--text-3); font-size: 12px; }
+.coverage-list { display: grid; gap: 12px; }
+.coverage-list > div { display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text-2); font-size: 12px; }
+.coverage-list strong { color: #5ee6ad; font-size: 11px; }
 .settings-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
 .settings-head .eyebrow { margin-bottom: 10px; }
 .settings-head .title { font-size: clamp(26px, 3.5vw, 40px); }
@@ -1438,6 +1460,7 @@ code { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospac
   .panel-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .panel-main { padding: 24px 18px; }
   .server-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-grid { grid-template-columns: 1fr; }
   .settings-head { align-items: start; flex-direction: column; }
   .settings-grid { grid-template-columns: 1fr; }
 }

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.7">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.8">
 </head>
 <body>
 
@@ -97,6 +97,13 @@
               <button class="panel-nav-item" type="button" data-category="welcome"><span>✦</span> Welcome<em>Soon</em></button>
               <button class="panel-nav-item" type="button" data-category="tickets"><span>□</span> Tickets<em>Soon</em></button>
             </nav>
+            <div class="health-card">
+              <div class="health-card-head"><strong>Server health</strong><span>Live</span></div>
+              <div class="health-row"><span><i class="health-dot"></i> Bot status</span><strong data-stat="health-bot">--</strong></div>
+              <div class="health-row"><span><i class="health-dot"></i> API status</span><strong>Operational</strong></div>
+              <div class="health-row"><span><i class="health-dot"></i> Latency</span><strong data-stat="ping">--</strong></div>
+              <div class="health-row"><span><i class="health-dot"></i> Uptime</span><strong data-stat="uptime">--</strong></div>
+            </div>
           </aside>
           <div class="panel-main">
             <div class="server-stats" id="server-stats" aria-live="polite">
@@ -104,6 +111,21 @@
               <div class="server-stat"><span>Channels</span><strong data-stat="channels">--</strong><small>active channels</small></div>
               <div class="server-stat"><span>Roles</span><strong data-stat="roles">--</strong><small>server roles</small></div>
               <div class="server-stat"><span>Bot status</span><strong class="stat-online" data-stat="bot">--</strong><small data-stat="updated">waiting for live data</small></div>
+            </div>
+            <div class="overview-grid">
+              <section class="overview-card activity-card">
+                <div class="overview-card-head"><div><span class="eyebrow">Server activity</span><h3>Recent activity</h3></div><span class="live-chip"><i></i> Live telemetry</span></div>
+                <div class="activity-list" id="server-activity"><div class="activity-empty">Waiting for the bot telemetry stream.</div></div>
+              </section>
+              <section class="overview-card module-card">
+                <div class="overview-card-head"><div><span class="eyebrow">Protection</span><h3>Security coverage</h3></div></div>
+                <div class="coverage-list">
+                  <div><span>Anti-Nuke</span><strong data-coverage="anti_nuke">--</strong></div>
+                  <div><span>Anti-Link</span><strong data-coverage="anti_link">--</strong></div>
+                  <div><span>Anti-Spam</span><strong data-coverage="anti_spam">--</strong></div>
+                  <div><span>Mod-log</span><strong data-coverage="mod_log_channel">--</strong></div>
+                </div>
+              </section>
             </div>
             <div class="settings-head">
               <div><span class="eyebrow">Server settings</span><h2 class="title" id="dash-settings-title">Security</h2><p class="lead" id="dash-settings-lead">Protect your community with clear, focused controls.</p></div>
@@ -225,7 +247,7 @@
   <script src="../assets/js/data/config.js"></script>
   <script src="../assets/js/data/i18n.js"></script>
   <script type="module" src="../assets/js/ui.js"></script>
-  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.4"></script>
+  <script type="module" src="../assets/js/dashboard-auth.js?v=1.0.5"></script>
 </body>
 </html>
 
