@@ -177,6 +177,7 @@ async function loadServerStats(guildId, guildName) {
   const guild = data.guilds?.[guildId];
   if (!guild) throw new Error('This server is not available in live telemetry yet.');
   panelServerName.textContent = guild.name || guildName || 'Server';
+  document.getElementById('dashboard-server-title').textContent = guild.name || guildName || 'Server';
   settingsTitle.textContent = `${guild.name || guildName || 'Server'} security`;
   document.querySelector('[data-stat="memberCount"]').textContent = (guild.memberCount || 0).toLocaleString('en-US');
   document.querySelector('[data-stat="channels"]').textContent = String(guild.channels || 0);
@@ -191,7 +192,9 @@ async function loadServerStats(guildId, guildName) {
     document.querySelector(`[data-coverage="${key}"]`).textContent = value === 1 ? 'Active' : value === 0 ? 'Off' : 'Unknown';
   });
   document.querySelector('[data-coverage="mod_log_channel"]').textContent = guild.settings?.mod_log_channel ? 'Configured' : 'Not set';
-  document.getElementById('server-activity').innerHTML = `<div class="activity-item"><i></i><span>Bot telemetry synced</span><time>${data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString() : 'now'}</time></div><div class="activity-item"><i></i><span>${guild.memberCount || 0} members tracked</span><time>Live</time></div><div class="activity-item"><i></i><span>${guild.botOnline ? 'Bot is online and responding' : 'Bot appears offline'}</span><time>Live</time></div>`;
+  const activityMarkup = `<div class="activity-item"><i></i><span>Bot telemetry synced</span><time>${data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString() : 'now'}</time></div><div class="activity-item"><i></i><span>${guild.memberCount || 0} members tracked</span><time>Live</time></div><div class="activity-item"><i></i><span>${guild.botOnline ? 'Bot is online and responding' : 'Bot appears offline'}</span><time>Live</time></div>`;
+  document.getElementById('server-activity').innerHTML = activityMarkup;
+  document.getElementById('server-activity-side').innerHTML = activityMarkup;
 }
 
 function formatUptime(seconds) {
