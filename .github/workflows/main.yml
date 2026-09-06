@@ -91,7 +91,7 @@ jobs:
           GH_PERSONAL_TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GITHUB_SETTINGS_RAW_URL: https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/main/guild-settings.json
+          GITHUB_SETTINGS_RAW_URL: https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/guild-settings.json
           VYBOT_API_PORT: '8788'
           VYBOT_API_TOKEN: ${{ secrets.VYBOT_API_TOKEN }}
           VYBOT_BRIDGE_PORT: '8787'
@@ -106,6 +106,8 @@ jobs:
           echo "🔄 Süre dolduğunda kendini otomatik yenileyip sıradaki Actions'ı başlatacak."
           echo "========================================================"
 
+          node bridge/internal-api.js &
+          echo $! > /tmp/vybot-internal-api.pid
           node bridge/server.js &
           echo $! > /tmp/vybot-bridge.pid
 
@@ -134,8 +136,9 @@ jobs:
           fi
 
           # 4 saat 55 dakika = 17700 saniye sonra temiz sonlanma
-          timeout 17700 node src/index.js || true
+          env -u VYBOT_API_PORT timeout 17700 node src/index.js || true
 
+          if [ -f /tmp/vybot-internal-api.pid ]; then kill "$(cat /tmp/vybot-internal-api.pid)" 2>/dev/null || true; fi
           if [ -f /tmp/vybot-bridge.pid ]; then kill "$(cat /tmp/vybot-bridge.pid)" 2>/dev/null || true; fi
           if [ -f /tmp/cloudflared.pid ]; then kill "$(cat /tmp/cloudflared.pid)" 2>/dev/null || true; fi
           echo "Oturum süresi tamamlandı, yenileniyor..."

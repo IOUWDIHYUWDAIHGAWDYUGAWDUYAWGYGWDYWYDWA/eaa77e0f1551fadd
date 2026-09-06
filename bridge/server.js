@@ -130,7 +130,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     const match = /^\/api\/guilds\/([^/]+)\/settings\/?$/.exec(url.pathname);
-    if (!match || req.method !== 'POST') {
+    if (!match || (req.method !== 'POST' && req.method !== 'GET')) {
       send(res, 404, { error: 'not_found' });
       return;
     }
@@ -158,15 +158,38 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const bodyBuf = await readBody(req);
-    const proxied = await proxyToBot('POST', `/api/guilds/${guildId}/settings`, bodyBuf);
-    send(res, proxied.status || 502, proxied.body.toString('utf8') || '{"ok":true}');
-  } catch (err) {
-    const code = err && err.code;
-    if (code === 'ECONNREFUSED') {
-      send(res, 503, { error: 'bot_api_offline' });
+    if (req.method === 'GET') {
+      try {
+        const proxied = await proxyToBot('GET', `/api/guilds/${guildId}/settings`, Buffer.alloc(0));
+        send(res, proxied.status || 200, proxied.body.toString('utf8') || '{"ok":true}');
+      } catch {
+        const { getGuildSettings } = require('./github-file');
+        send(res, 200, { ok: true, settings: await getGuildSettings(guildId) });
+      }
       return;
     }
+
+    const bodyBuf = await readBody(req);
+    try {
+      const proxied = await proxyToBot('POST', `/api/guilds/${guildId}/settings`, bodyBuf);
+      if (proxied.status && proxied.status < 500) {
+        send(res, proxied.status, proxied.body.toString('utf8') || '{"ok":true}');
+        return;
+      }
+    } catch {
+      /* localhost API yoksa GitHub live-data kaydı */
+    }
+    let prefs = {};
+    try {
+      prefs = JSON.parse(bodyBuf.toString('utf8') || '{}');
+    } catch {
+      send(res, 400, { error: 'invalid_json' });
+      return;
+    }
+    const { upsertGuildSettings } = require('./github-file');
+    const saved = await upsertGuildSettings(guildId, prefs);
+    send(res, 200, { ok: true, settings: saved });
+  } catch (err) {
     send(res, 500, { error: 'bridge_error' });
   }
 });
