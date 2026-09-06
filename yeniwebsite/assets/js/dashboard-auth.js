@@ -5,6 +5,9 @@ const feedback = document.getElementById('dash-auth-feedback');
 const session = document.getElementById('dash-session');
 const userName = document.getElementById('dash-user-name');
 const guildsElement = document.getElementById('dash-guilds');
+const settings = document.getElementById('dash-settings');
+const settingsTitle = document.getElementById('dash-settings-title');
+const backButton = document.getElementById('dash-back');
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 let accessToken = '';
@@ -129,11 +132,28 @@ function renderGuilds(guilds) {
       ? `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="">`
       : `<span>${escapeHtml(guild.name.slice(0, 2).toUpperCase())}</span>`;
     const action = installed
-      ? '<span class="guild-status"><i></i>Installed</span>'
+      ? `<div class="guild-actions"><span class="guild-status"><i></i>Installed</span><button class="btn btn-primary btn-sm" type="button" data-manage-guild="${escapeHtml(guild.id)}" data-guild-name="${escapeHtml(guild.name)}">Manage</button></div>`
       : `<a class="btn btn-ghost btn-sm" href="${escapeHtml(inviteForGuild(guild.id))}" target="_blank" rel="noopener noreferrer">Add VYBot</a>`;
     const accessLabel = installed ? 'VYBot is active here' : 'Manage Guild access';
     return `<article class="guild-card ${installed ? 'is-installed' : ''}"><div class="guild-avatar">${icon}</div><div class="guild-copy"><strong>${escapeHtml(guild.name)}</strong><span>${accessLabel}</span></div>${action}</article>`;
   }).join('');
+
+  guildsElement.querySelectorAll('[data-manage-guild]').forEach((button) => {
+    button.addEventListener('click', () => openSettings(button.dataset.manageGuild, button.dataset.guildName));
+  });
+}
+
+function openSettings(guildId, guildName) {
+  if (!settings) return;
+  settingsTitle.textContent = `${guildName} security`;
+  settings.dataset.guildId = guildId;
+  settings.hidden = false;
+  settings.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeSettings() {
+  if (!settings) return;
+  settings.hidden = true;
 }
 
 async function completeLogin() {
@@ -186,6 +206,7 @@ function logout() {
 
 loginButton?.addEventListener('click', startLogin);
 logoutButton?.addEventListener('click', logout);
+backButton?.addEventListener('click', closeSettings);
 
 completeLogin().catch((error) => {
   accessToken = '';
