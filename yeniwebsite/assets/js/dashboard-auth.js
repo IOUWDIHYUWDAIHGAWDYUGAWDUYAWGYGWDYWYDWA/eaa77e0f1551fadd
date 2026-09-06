@@ -27,7 +27,7 @@ const settingsLead = document.getElementById('dash-settings-lead');
 const settingsPanel = document.getElementById('settings-panel');
 const stats = document.getElementById('server-stats');
 const childGuildId = new URLSearchParams(window.location.search).get('guild');
-const childMode = Boolean(childGuildId && window.opener);
+const childMode = Boolean(childGuildId);
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 const tokenKey = 'vybot_token';
@@ -216,15 +216,12 @@ function renderGuilds(guilds) {
       ? `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128" alt="">`
       : `<span>${escapeHtml(guild.name.slice(0, 2).toUpperCase())}</span>`;
     const action = installed
-      ? `<div class="guild-actions"><span class="guild-status"><i></i>Installed</span><button class="btn btn-primary btn-sm" type="button" data-manage-guild="${escapeHtml(guild.id)}" data-guild-name="${escapeHtml(guild.name)}">Manage</button></div>`
+      ? `<div class="guild-actions"><span class="guild-status"><i></i>Installed</span><a class="btn btn-primary btn-sm" href="./?guild=${encodeURIComponent(guild.id)}&view=manage&release=93f785c" target="_blank" rel="noopener">Manage</a></div>`
       : `<a class="btn btn-ghost btn-sm" href="${escapeHtml(inviteForGuild(guild.id))}" target="_blank" rel="noopener noreferrer">Add VYBot</a>`;
     const accessLabel = installed ? 'VYBot is active here' : 'Manage Guild access';
     return `<article class="guild-card ${installed ? 'is-installed' : ''}"><div class="guild-avatar">${icon}</div><div class="guild-copy"><strong>${escapeHtml(guild.name)}</strong><span>${accessLabel}</span></div>${action}</article>`;
   }).join('');
 
-  guildsElement.querySelectorAll('[data-manage-guild]').forEach((button) => {
-    button.addEventListener('click', () => openGuildWindow(button.dataset.manageGuild));
-  });
 }
 
 function openGuildWindow(guildId) {
@@ -411,10 +408,8 @@ function enterChildMode() {
   document.querySelector('.dashboard-session').hidden = true;
   document.querySelector('.section').hidden = true;
   settings.hidden = true;
-  window.opener.postMessage({ type: 'vybot:dashboard-ready' }, window.location.origin);
-  window.addEventListener('message', async (event) => {
-    if (event.origin !== window.location.origin || event.data?.type !== 'vybot:dashboard-token') return;
-    accessToken = event.data.token || '';
+  const loadChildDashboard = async (token) => {
+    accessToken = token || '';
     try {
       const guilds = await discordRequest('/users/@me/guilds');
       const guild = guilds.find((item) => item.id === childGuildId);
@@ -424,7 +419,11 @@ function enterChildMode() {
     } catch (error) {
       setFeedback(error.message, 'error');
     }
-  }, { once: true });
+  };
+  Promise.resolve(loadToken()).then((token) => {
+    if (token) return loadChildDashboard(token);
+    setFeedback('Sign in with Discord before opening a server dashboard.', 'error');
+  });
 }
 
 function logout() {
