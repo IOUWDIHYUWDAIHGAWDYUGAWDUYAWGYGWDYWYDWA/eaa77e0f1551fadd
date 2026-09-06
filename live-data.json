@@ -1,12 +1,12 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-06T19:36:57.003Z",
+  "updatedAt": "2026-09-06T19:37:57.004Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 121,
+    "uptimeSeconds": 181,
     "guildCount": 1,
-    "ping": 69
+    "ping": 74
   },
   "guilds": {
     "1536835757132751048": {
