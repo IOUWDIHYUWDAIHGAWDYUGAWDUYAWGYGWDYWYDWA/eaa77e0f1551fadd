@@ -801,7 +801,12 @@ function contentFor(rootEl) {
   }
 
   function loadLive(silent) {
-    if (!liveDataUrl) { state.loading = false; state.error = true; render(); return; }
+    if (!liveDataUrl) {
+      state.loading = false;
+      state.error = true;
+      render();
+      return Promise.resolve(false);
+    }
     if (state.liveRequest) return state.liveRequest;
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
     state.liveRequest = Promise.race([
