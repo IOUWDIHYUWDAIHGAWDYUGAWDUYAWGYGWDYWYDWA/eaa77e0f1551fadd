@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dokümantasyon — VYBot</title>
+  <meta name="description" content="VYBot kurulum, komutlar, moderasyon, güvenlik, müzik, ekonomi, seviye ve yapılandırma rehberi. 3 adımda botu ayağa kaldırın.">
+  <link rel="canonical" href="https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io/eaa77e0f1551fadd/docs/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dokümantasyon — VYBot">
+  <meta property="og:description" content="VYBot kurulum ve yapılandırma rehberi.">
+  <meta name="theme-color" content="#06080f">
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.2">
+</head>
+<body>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../" aria-label="VYBot ana sayfa">
+        <img src="../assets/img/logo.png" alt="" width="30" height="30">
+        <span>VY<span class="brand-v">Bot</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Ana gezinme">
+        <a href="../#ozellikler">Özellikler</a>
+        <a href="../commands/">Komutlar</a>
+        <a href="./" aria-current="page">Dokümantasyon</a>
+        <a href="../status/">Durum</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="dashboard-link" href="../dashboard/">Dashboard</a>
+        <a class="btn btn-primary btn-sm" data-invite href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52c-.17-.38-.4-.87-.61-1.25a.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.08.08 0 0 0-.04-.12 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.08.08 0 0 1 .08-.01c3.93 1.8 8.19 1.8 11.86 0a.08.08 0 0 1 .08 0l.37.3a.08.08 0 0 1-.01.12c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6.03-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.07.07 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.22 0 2.18 1.1 2.16 2.42 0 1.34-.94 2.42-2.16 2.42z"/></svg>
+          Discord'a Ekle
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Menüyü aç/kapat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <nav class="mobile-menu" id="mobile-menu" aria-label="Mobil menü">
+    <a href="../#ozellikler">Özellikler</a>
+    <a href="../commands/">Komutlar</a>
+    <a href="./" aria-current="page">Dokümantasyon</a>
+    <a href="../status/">Durum</a>
+    <a href="../dashboard/">Dashboard</a>
+    <a class="btn btn-primary" data-invite href="#">Discord'a Ekle</a>
+  </nav>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <span class="eyebrow">Dokümantasyon</span>
+        <h1>Üç adımda çalışır.</h1>
+        <p class="lead">Kurulumdan yapılandırmaya kadar VYBot'un tamamı — botun gerçek davranışına birebir uyan rehber.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:clamp(36px,5vw,56px)">
+      <div class="container docs-layout">
+        <aside class="docs-side" aria-label="Dokümantasyon içindekiler">
+          <div class="ds-label">İçindekiler</div>
+          <a href="#kurulum">Başlarken / Kurulum</a>
+          <a href="#komutlar">Komutlar</a>
+          <a href="#moderasyon">Moderasyon</a>
+          <a href="#guvenlik">Güvenlik</a>
+          <a href="#muzik">Müzik</a>
+          <a href="#ekonomi">Ekonomi</a>
+          <a href="#seviye">Seviye</a>
+          <a href="#yapilandirma">Yapılandırma</a>
+          <a href="#sss">SSS</a>
+        </aside>
+
+        <div class="docs-content">
+          <section id="kurulum">
+            <h2>Başlarken / Kurulum</h2>
+            <ol class="doc-steps">
+              <li><span><strong>Discord Developer portalında uygulama oluştur.</strong> "Bot" sekmesinden token'ı al ve <em>Presence, Server Members, Message Content</em> intent'lerinin üçünü de aç. General Information'dan APPLICATION ID'yi kopyala.</span></li>
+              <li><span><strong>Botu sunucuna davet et.</strong> OAuth2 → URL Generator'da <code class="inline">bot</code> ve <code class="inline">applications.commands</code> seç. VYBot varsayılan olarak Administrator izni istemez; sitedeki davet bağlantısını kullan.</span></li>
+              <li><span><strong>Ortam değişkenlerini ayarla.</strong> Proje kökünde <code class="inline">.env</code> dosyası oluştur (<code class="inline">.env.example</code> referans).</span></li>
+              <li><span><strong>Slash komutlarını Discord'a kaydet:</strong> <code class="inline">npm run deploy</code></span></li>
+              <li><span><strong>Botu başlat:</strong> <code class="inline">npm start</code> — 7/24 çalışmaya hazır.</span></li>
+            </ol>
+            <div class="doc-code"><span class="cmt"># .env</span>
+<span class="key">DISCORD_TOKEN</span>=bot_tokenin
+<span class="key">CLIENT_ID</span>=application_id
+<span class="key">GUILD_ID</span>=   <span class="cmt"># isteğe bağlı: test sunucusu (komutlar anında yüklenir)</span></div>
+          </section>
+
+          <section id="komutlar">
+            <h2>Komutlar</h2>
+            <p>VYBot, 9 kategoride <strong>38 slash komutu</strong> ile gelir: Moderasyon, Güvenlik, Müzik, Ekonomi, Seviye, Çekiliş, Roller, Ticket ve Araçlar.</p>
+            <ul>
+              <li>Tüm komutlar <strong>slash (/)</strong> tabanlıdır — Discord'un arayüzünden otomatik tamamlama ile kullanılır.</li>
+              <li>Zarar verebilecek komutlar Discord izin sistemiyle korunur ve yalnızca yetkili üyelere görünür.</li>
+              <li>Komut dili Türkçedir: <code class="inline">/uyar</code>, <code class="inline">/sicil</code>, <code class="inline">/gunluk</code>, <code class="inline">/cal</code>…</li>
+            </ul>
+            <p><a class="f-link" href="../commands/">Tüm komut listesini gez
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></p>
+          </section>
+
+          <section id="moderasyon">
+            <h2>Moderasyon</h2>
+            <p>Moderasyon kayıtları SQLite veritabanında kalıcı olarak tutulur; sunucu restart etse bile silinmez.</p>
+            <ul>
+              <li><code class="inline">/ban</code> — üyeyi yasaklar, sebep sicile işlenir.</li>
+              <li><code class="inline">/kick</code> — üyeyi sunucudan atar.</li>
+              <li><code class="inline">/timeout</code> &amp; <code class="inline">/untimeout</code> — 1 dakika ile 28 gün arası susturma.</li>
+              <li><code class="inline">/uyar</code> — resmi uyarı; 3 uyarıya ulaşan üye mod-log'da işaretlenir.</li>
+              <li><code class="inline">/sicil</code> — kullanıcının tüm ceza geçmişi (Yönetici ile sıfırlanabilir).</li>
+              <li><code class="inline">/temizle</code> — 1–100 arası mesajı toplu siler.</li>
+            </ul>
+          </section>
+
+          <section id="guvenlik">
+            <h2>Güvenlik</h2>
+            <p>Dört ana kalkan <code class="inline">/guvenlik</code> komutuyla tek tek açılıp kapatılabilir; mevcut durum <code class="inline">/guvenlik durum</code> ile listelenir.</p>
+            <ul>
+              <li><strong>Anti-Nuke</strong> — 10 saniyelik pencerede 3+ kanal/rol silme girişimini engeller.</li>
+              <li><strong>Anti-Link</strong> — Discord davetleri ve harici reklam bağlantılarını siler, uyarır, loglar.</li>
+              <li><strong>Anti-Küfür</strong> — Türkçe küfür/argo filtresi.</li>
+              <li><strong>Anti-Spam</strong> — hızlı mesaj flood'una otomatik timeout.</li>
+              <li><strong>Doğrulama</strong> — <code class="inline">/dogrulama-kur</code> ile butonlu kayıt paneli.</li>
+              <li><strong>Oto-Rol</strong> — <code class="inline">/otorol</code> ile yeni üyelere otomatik rol.</li>
+              <li><strong>Mod-Log</strong> — <code class="inline">/modlog</code> ile denetim kanalı; mesaj, üye, kanal ve rol olayları loglanır.</li>
+            </ul>
+            <div class="doc-callout"><strong>Not:</strong> Yetkili üyeler (<em>Mesajları Yönet</em> izni olanlar) auto-mod filtrelerinden muaftır.</div>
+          </section>
+
+          <section id="muzik">
+            <h2>Müzik</h2>
+            <p>Müzik motoru <code class="inline">@discordjs/voice</code> + <code class="inline">play-dl</code> üzerine kuruludur.</p>
+            <ul>
+              <li><code class="inline">/cal</code> — şarkı adı ya da YouTube / Spotify / SoundCloud bağlantısı ile çal.</li>
+              <li><code class="inline">/kuyruk</code> — sırayı listeler. <code class="inline">/gec</code> sıradakine atlar. <code class="inline">/durdur</code> kuyruğu temizleyip odadan ayrılır.</li>
+              <li>Kullanım için önce bir sesli kanalda olmanız gerekir.</li>
+            </ul>
+          </section>
+
+          <section id="ekonomi">
+            <h2>Ekonomi</h2>
+            <p>Cüzdan ve banka bakiyeleri sunucu bazlı saklanır; ödül miktarları panelden ayarlanabilir.</p>
+            <ul>
+              <li><code class="inline">/bakiye</code> — cüzdan, banka ve toplam varlık.</li>
+              <li><code class="inline">/gunluk</code> — 24 saatlik coin hediyesi (varsayılan 250 coin).</li>
+              <li><code class="inline">/calis</code> — meslek sistemiyle çalış, 1 saat bekleme süresi.</li>
+              <li><code class="inline">/kumar slot</code> — meyve slot makinesi. <code class="inline">/kumar yazi-tura</code> — 2 kat kazanç şansı.</li>
+              <li><code class="inline">/yazi-tura</code> — canvas görselli yazı-tura. <code class="inline">/zenginler</code> — top 10 liste.</li>
+            </ul>
+          </section>
+
+          <section id="seviye">
+            <h2>Seviye</h2>
+            <p>MEE6 tarzı XP motoru: her mesaj XP kazandırır (60 saniye bekleme süresi, mesaj başına 15–25 XP).</p>
+            <ul>
+              <li><code class="inline">/rank</code> — @napi-rs/canvas ile üretilen görsel rank kartı.</li>
+              <li><code class="inline">/liderlik</code> — sunucunun en aktif 10 üyesi.</li>
+              <li><code class="inline">/seviye-odul ekle</code> — belirli seviyeye ulaşana otomatik rol; silmek için <code class="inline">sil</code>, listelemek için <code class="inline">liste</code>.</li>
+              <li>Yeni üyelere canvas hoş geldin kartı gönderilir.</li>
+            </ul>
+          </section>
+
+          <section id="yapilandirma">
+            <h2>Yapılandırma</h2>
+            <p>VYBot'un tüm ayarları <code class="inline">data/vybot.sqlite</code> dosyasında tutulur — harici servis bağımlılığı yoktur.</p>
+            <ul>
+              <li><strong>Sunucu ayarları:</strong> doğrulama rolü/kanalı, oto-rol, mod-log kanalı, kalkan durumu.</li>
+              <li><strong>Panel ayarları:</strong> seviye, welcome, leaderboard, reaction-roles, ekonomi, ticket, çekiliş, müzik modülleri — web panelinden yönetilebilir (<code class="inline">/panel-bagla</code> ile bağlanır).</li>
+              <li><strong>Canlı veri:</strong> bot, her 5 dakikada sunucu istatistiklerini sitenin okuduğu <code class="inline">live-data.json</code> dosyasına yazar.</li>
+            </ul>
+          </section>
+
+          <section id="sss">
+            <h2>Sık Sorulan Sorular</h2>
+            <details class="faq-item">
+              <summary>Botu kullanmak ücretli mi?</summary>
+              <p class="faq-a">Hayır. VYBot'un tamamı ücretsizdir ve kendi sunucunda barındırabilirsin.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Hangi izinlere ihtiyacı var?</summary>
+              <p class="faq-a">VYBot varsayılan davette Administrator istemez. Bazı sunucu işlemleri Discord rol hiyerarşisi ve seçilen modül izinleriyle sınırlı olabilir; ihtiyaç duyulan izinler komut dokümantasyonunda açıkça gösterilir.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Verilerim nerede saklanıyor?</summary>
+              <p class="faq-a">Tüm veriler kendi sunucundaki <code class="inline">data/vybot.sqlite</code> dosyasında saklanır. Hiçbir veri üçüncü bir servise gönderilmez.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Komutlar neden Türkçe?</summary>
+              <p class="faq-a">VYBot Türk toplulukları için tasarlandı; komutlar ve bot yanıtları Türkçedir.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Müzik çalmıyor, ne yapmalıyım?</summary>
+              <p class="faq-a">Botun sesli kanala katılma ve konuşma izinlerini doğrula. Ayrıca sunucunda ses altyapısının çalıştığından emin ol (kurulumla birlikte gelir: ffmpeg-static).</p>
+            </details>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="../" aria-label="VYBot ana sayfa">
+            <img src="../assets/img/logo.png" alt="" width="30" height="30">
+            <span>VY<span class="brand-v">Bot</span></span>
+          </a>
+          <p>Moderasyon, güvenlik, müzik, ekonomi ve seviye — hepsi tek bir Discord botunda.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Ürün</h5>
+          <a href="../#ozellikler">Özellikler</a>
+          <a href="../commands/">Komutlar</a>
+          <a href="../dashboard/">Dashboard</a>
+          <a href="./">Dokümantasyon</a>
+        </div>
+        <div class="footer-col">
+          <h5>Topluluk</h5>
+          <a data-invite href="#" target="_blank" rel="noopener noreferrer">Discord</a>
+          <a href="https://github.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="../status/">Sistem Durumu</a>
+        </div>
+        <div class="footer-col">
+          <h5>Yasal</h5>
+          <a href="../privacy/">Gizlilik</a>
+          <a href="../terms/">Kullanım Şartları</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2025</span> VYBot</span>
+        <a class="status-pill" href="../status/"><i></i>Sistem Durumu</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/data/config.js?v=1.0.0"></script>
+  <script type="module" src="../assets/js/ui.js?v=1.0.0"></script>
+</body>
+</html>
+
+

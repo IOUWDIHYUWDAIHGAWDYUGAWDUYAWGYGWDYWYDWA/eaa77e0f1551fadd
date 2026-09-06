@@ -300,7 +300,7 @@ function renderGuildGrid(filter = '') {
       card.addEventListener('click', () => selectServer(guild.id));
     } else {
       // ⚠️ Yetkili AMA Bot Yok -> Sunucuya Ekle
-      const addUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`;
+      const addUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=1100349828182&scope=bot%20applications.commands&guild_id=${guild.id}`;
       badgeHtml = `<span class="badge-tag badge-yellow"><i class="fa-solid fa-circle-question"></i> Kurulmadı</span>`;
       btnHtml = `
         <a href="${addUrl}" target="_blank" class="btn btn-secondary" style="width: 100%; border-color: var(--accent-amber); color: var(--accent-amber);" onclick="event.stopPropagation();">
@@ -346,7 +346,7 @@ function selectServer(guildId) {
   }
 
   if (!guild.botInGuild) {
-    const addUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`;
+    const addUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=1100349828182&scope=bot%20applications.commands&guild_id=${guild.id}`;
     window.open(addUrl, '_blank');
     showToast('Bot kurulum penceresi açıldı.', 'info');
     return;

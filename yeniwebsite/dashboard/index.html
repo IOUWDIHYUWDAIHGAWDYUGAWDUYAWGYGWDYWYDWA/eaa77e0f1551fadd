@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — VYBot</title>
+  <meta name="description" content="VYBot web panel: configure leveling, economy, security, music and giveaway modules for your server.">
+  <link rel="canonical" href="https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io/eaa77e0f1551fadd/dashboard/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dashboard — VYBot">
+  <meta property="og:description" content="Configure VYBot exactly how your community needs it.">
+  <meta name="theme-color" content="#06080f">
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.2">
+</head>
+<body>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../" aria-label="VYBot home">
+        <img src="../assets/img/logo.png" alt="" width="30" height="30">
+        <span>VY<span class="brand-v">Bot</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../#features" data-i18n="nav.features">Features</a>
+        <a href="../commands/" data-i18n="nav.commands">Commands</a>
+        <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+        <a href="../status/" data-i18n="nav.status">Status</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="dashboard-link" href="./" aria-current="page" data-i18n="nav.dashboard">Dashboard</a>
+        <button class="lang-toggle btn btn-ghost btn-sm" id="lang-toggle" type="button">Türkçe</button>
+        <a class="btn btn-primary btn-sm" data-invite href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52c-.17-.38-.4-.87-.61-1.25a.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.08.08 0 0 0-.04-.12 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.08.08 0 0 1 .08-.01c3.93 1.8 8.19 1.8 11.86 0a.08.08 0 0 1 .08 0l.37.3a.08.08 0 0 1-.01.12c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6.03-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.07.07 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.22 0 2.18 1.1 2.16 2.42 0 1.34-.94 2.42-2.16 2.42z"/></svg>
+          <span data-i18n="nav.add">Add to Discord</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile menu">
+    <a href="../#features" data-i18n="nav.features">Features</a>
+    <a href="../commands/" data-i18n="nav.commands">Commands</a>
+    <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+    <a href="../status/" data-i18n="nav.status">Status</a>
+    <a href="./" aria-current="page" data-i18n="nav.dashboard">Dashboard</a>
+    <a class="btn btn-primary" data-invite href="#" data-i18n="nav.add">Add to Discord</a>
+  </nav>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <span class="eyebrow" data-i18n="dash.eyebrow">Dashboard</span>
+        <h1 class="title-3d" data-i18n="dash.title">Your server. Your rules.</h1>
+        <p class="lead" data-i18n="dash.lead">Configure VYBot exactly how your community needs it. The modules managed by the panel are already working inside the bot — the interface integration is on the way.</p>
+        <div class="hero-cta" style="margin-top:28px">
+          <button class="btn btn-primary btn-lg disabled" id="dash-login" type="button" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52c-.17-.38-.4-.87-.61-1.25a.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.08.08 0 0 0-.04-.12 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.08.08 0 0 1 .08-.01c3.93 1.8 8.19 1.8 11.86 0a.08.08 0 0 1 .08 0l.37.3a.08.08 0 0 1-.01.12c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6.03-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.07.07 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.22 0 2.18 1.1 2.16 2.42 0 1.34-.94 2.42-2.16 2.42z"/></svg>
+            <span data-i18n="dash.login">Sign in with Discord</span>
+          </button>
+          <a class="btn btn-ghost btn-lg" data-invite href="#" target="_blank" rel="noopener noreferrer" data-i18n="dash.addfirst">Add the Bot First</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:clamp(36px,5vw,56px)">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow" data-i18n="dash.modules">Modules</span>
+          <h2 class="title" data-i18n="dash.modules.title">Modules managed by the panel.</h2>
+          <p class="lead" data-i18n="dash.mod.lead">The bot already stores these modules' settings on SQLite. Once the panel integration is complete, the areas below will be editable.</p>
+        </header>
+
+        <div class="dash-grid reveal">
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-8M22 19H2"/></svg></div>
+            <h4 data-i18n="dash.mod.level">Leveling & XP</h4>
+            <p data-i18n="dash.mod.level.desc">XP range, cooldown and level reward roles.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></div>
+            <h4 data-i18n="dash.mod.welcome">Welcome</h4>
+            <p data-i18n="dash.mod.welcome.desc">Welcome card, auto-role and verification channel.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M6 3h12v6a6 6 0 0 1-12 0V3z"/><path d="M6 5H3v2a4 4 0 0 0 3 3.87M18 5h3v2a4 4 0 0 1-3 3.87"/></svg></div>
+            <h4 data-i18n="dash.mod.leader">Leaderboard</h4>
+            <p data-i18n="dash.mod.leader.desc">Ranking visibility and top-list channel.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12l-8.5 8.5a2.1 2.1 0 0 1-3 0L3 15a2.1 2.1 0 0 1 0-3L11.5 3.5H17L21 7.5 20 12z"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg></div>
+            <h4 data-i18n="dash.mod.roles">Role Panels</h4>
+            <p data-i18n="dash.mod.roles.desc">Button-based role panel header, channel and roles.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+            <h4 data-i18n="dash.mod.econ">Economy</h4>
+            <p data-i18n="dash.mod.econ.desc">Daily reward, work salary and currency symbol.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.4-.7L3 21l1.8-4.6A8.4 8.4 0 1 1 21 11.5z"/></svg></div>
+            <h4 data-i18n="dash.mod.ticket">Ticket</h4>
+            <p data-i18n="dash.mod.ticket.desc">Ticket panel text, category and close behavior.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13M12 8c-2-4-7-3-6 0M12 8c2-4 7-3 6 0"/></svg></div>
+            <h4 data-i18n="dash.mod.give">Giveaway</h4>
+            <p data-i18n="dash.mod.give.desc">Default winner count, duration and target channel.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V6l12-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg></div>
+            <h4 data-i18n="dash.mod.music">Music</h4>
+            <p data-i18n="dash.mod.music.desc">Default voice channel and player behavior.</p>
+          </div>
+          <div class="dash-mod">
+            <div class="dm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-4z"/></svg></div>
+            <h4 data-i18n="dash.mod.sec">Security</h4>
+            <p data-i18n="dash.mod.sec.desc">Anti-nuke, anti-link, anti-swear, anti-spam and mod-log.</p>
+          </div>
+        </div>
+
+        <div class="auth-note reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+          <span><strong data-i18n="dash.auth.title">Transparent status:</strong> <span data-i18n="dash.auth.desc">Discord OAuth sign-in is not yet active — so the button is disabled. We do not show a fake sign-in flow; when the integration is ready, this page will open to server selection and module settings. Until then, use the /guvenlik, /seviye-odul and /panel-bagla commands in Discord for your server settings.</span></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="../" aria-label="VYBot home">
+            <img src="../assets/img/logo.png" alt="" width="30" height="30">
+            <span>VY<span class="brand-v">Bot</span></span>
+          </a>
+          <p>Moderation, security, music, economy and leveling — all in one Discord bot.</p>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.product">Product</h5>
+          <a href="../#features" data-i18n="nav.features">Features</a>
+          <a href="../commands/" data-i18n="nav.commands">Commands</a>
+          <a href="./">Dashboard</a>
+          <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.community">Community</h5>
+          <a data-invite href="#" target="_blank" rel="noopener noreferrer">Discord</a>
+          <a href="https://github.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="../status/" data-i18n="foot.status">System Status</a>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.legal">Legal</h5>
+          <a href="../privacy/">Privacy</a>
+          <a href="../terms/">Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2026</span> VYBot</span>
+        <a class="status-pill" href="../status/"><i></i><span data-i18n="foot.status">System Status</span></a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/data/config.js"></script>
+  <script src="../assets/js/data/i18n.js"></script>
+  <script type="module" src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      var cfg = window.VYBOT_CONFIG || {};
+      var btn = document.getElementById('dash-login');
+      if (btn && cfg.dashboardApiUrl) {
+        var a = document.createElement('a');
+        a.href = cfg.dashboardApiUrl + '/auth/discord';
+        a.className = btn.className.replace('disabled', '');
+        a.removeAttribute('aria-disabled');
+        a.innerHTML = btn.innerHTML;
+        btn.replaceWith(a);
+      }
+    })();
+  </script>
+</body>
+</html>
+

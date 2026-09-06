@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Status — VYBot</title>
+  <meta name="description" content="VYBot system status: bot, panel, API and database services in real time.">
+  <link rel="canonical" href="https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io/eaa77e0f1551fadd/status/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Status — VYBot">
+  <meta property="og:description" content="Live status of VYBot services.">
+  <meta name="theme-color" content="#06080f">
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../assets/css/main.css?v=1.0.2">
+</head>
+<body>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../" aria-label="VYBot home">
+        <img src="../assets/img/logo.png" alt="" width="30" height="30">
+        <span>VY<span class="brand-v">Bot</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="../#features" data-i18n="nav.features">Features</a>
+        <a href="../commands/" data-i18n="nav.commands">Commands</a>
+        <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+        <a href="./" aria-current="page" data-i18n="nav.status">Status</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="dashboard-link" href="../dashboard/" data-i18n="nav.dashboard">Dashboard</a>
+        <button class="lang-toggle btn btn-ghost btn-sm" id="lang-toggle" type="button">Türkçe</button>
+        <a class="btn btn-primary btn-sm" data-invite href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52c-.17-.38-.4-.87-.61-1.25a.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.08.08 0 0 0-.04-.12 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.08.08 0 0 1 .08-.01c3.93 1.8 8.19 1.8 11.86 0a.08.08 0 0 1 .08 0l.37.3a.08.08 0 0 1-.01.12c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6.03-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.07.07 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.22 0 2.18 1.1 2.16 2.42 0 1.34-.94 2.42-2.16 2.42z"/></svg>
+          <span data-i18n="nav.add">Add to Discord</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile menu">
+    <a href="../#features" data-i18n="nav.features">Features</a>
+    <a href="../commands/" data-i18n="nav.commands">Commands</a>
+    <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+    <a href="./" aria-current="page" data-i18n="nav.status">Status</a>
+    <a href="../dashboard/" data-i18n="nav.dashboard">Dashboard</a>
+    <a class="btn btn-primary" data-invite href="#" data-i18n="nav.add">Add to Discord</a>
+  </nav>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <span class="eyebrow" data-i18n="stat.eyebrow">Status</span>
+        <h1 class="title-3d" data-i18n="stat.title">System status.</h1>
+        <p class="lead" data-i18n="stat.lead">This page is fed by the bot's live data bridge. If there is no real data, you see an honest "no data" state — never a fake uptime.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:clamp(36px,5vw,56px)">
+      <div class="container" style="max-width:820px">
+        <div class="status-banner loading" id="status-banner" role="status">
+          <div class="sb-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <div>
+            <div class="sb-title" data-i18n="stat.checking">Checking status…</div>
+            <div class="sb-sub" data-i18n="stat.connecting">Connecting to live data source</div>
+          </div>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-card" data-service="bot">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M8 4h8"/><circle cx="9" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/></svg></div>
+            <div><div class="sc-name" data-i18n="stat.bot">Bot</div><div class="sc-desc" data-i18n="stat.bot.sub">Discord gateway connection</div></div>
+            <div class="sc-state loading"><i></i><span data-i18n="stat.checking">Checking</span></div>
+          </div>
+          <div class="status-card" data-service="api">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2L4.5 12.5H11L9.5 22 19 10.5h-6.5L13 2z"/></svg></div>
+            <div><div class="sc-name" data-i18n="stat.api">Discord API</div><div class="sc-desc" data-i18n="stat.api.sub">Command and interaction traffic</div></div>
+            <div class="sc-state loading"><i></i><span data-i18n="stat.checking">Checking</span></div>
+          </div>
+          <div class="status-card" data-service="database">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5V12c0 1.7 3.6 3 8 3s8-1.3 8-3V5.5M4 12v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V12"/></svg></div>
+            <div><div class="sc-name" data-i18n="stat.db">Database</div><div class="sc-desc" data-i18n="stat.db.sub">SQLite · settings, level, economy</div></div>
+            <div class="sc-state loading"><i></i><span data-i18n="stat.checking">Checking</span></div>
+          </div>
+          <div class="status-card" data-service="web">
+            <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg></div>
+            <div><div class="sc-name" data-i18n="stat.web">Web Panel</div><div class="sc-desc" data-i18n="stat.web.sub">This site and live data bridge</div></div>
+            <div class="sc-state loading"><i></i><span data-i18n="stat.checking">Checking</span></div>
+          </div>
+        </div>
+
+        <div class="status-note" id="status-note" hidden>
+          <span data-i18n="stat.note">Live data source: the bot's live-data.json file in the live-data branch (updated every 5 minutes).</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="../" aria-label="VYBot home">
+            <img src="../assets/img/logo.png" alt="" width="30" height="30">
+            <span>VY<span class="brand-v">Bot</span></span>
+          </a>
+          <p>Moderation, security, music, economy and leveling — all in one Discord bot.</p>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.product">Product</h5>
+          <a href="../#features" data-i18n="nav.features">Features</a>
+          <a href="../commands/" data-i18n="nav.commands">Commands</a>
+          <a href="../dashboard/" data-i18n="nav.dashboard">Dashboard</a>
+          <a href="../docs/" data-i18n="nav.docs">Documentation</a>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.community">Community</h5>
+          <a data-invite href="#" target="_blank" rel="noopener noreferrer">Discord</a>
+          <a href="https://github.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="./" data-i18n="foot.status">System Status</a>
+        </div>
+        <div class="footer-col">
+          <h5 data-i18n="foot.legal">Legal</h5>
+          <a href="../privacy/">Privacy</a>
+          <a href="../terms/">Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2026</span> VYBot</span>
+        <a class="status-pill ok" href="./"><i></i><span data-i18n="foot.status">System Status</span></a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/data/config.js"></script>
+  <script src="../assets/js/data/i18n.js"></script>
+  <script type="module" src="../assets/js/ui.js"></script>
+  <script type="module" src="../assets/js/status.js"></script>
+</body>
+</html>
+

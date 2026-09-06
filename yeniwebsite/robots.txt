@@ -1,0 +1,9 @@
+# VYBot — yeniwebsite
+# NOT: Bu dosya sitenin kökünde servis edilmelidir. Siteniz alan adı kökünde
+# yayındaysa bu dosya olduğu gibi çalışır; alt klasörde yayındaysa (örn.
+# github.io/repo/) robots.txt zaten kök tarafından yönetilir.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io/eaa77e0f1551fadd/sitemap.xml

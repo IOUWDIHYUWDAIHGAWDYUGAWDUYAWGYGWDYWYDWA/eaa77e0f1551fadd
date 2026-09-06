@@ -6,7 +6,7 @@
 
 ## 🌐 Web Sitesi (GitHub Pages)
 
-MEE6 tarzı tanıtım sitesi `web/` klasöründe bulunur ve **GitHub Actions** ile her push'ta otomatik olarak **GitHub Pages**'e yayınlanır.
+MEE6 tarzı tanıtım sitesi `yeniwebsite/` klasöründe bulunur ve **GitHub Actions** ile her push'ta otomatik olarak **GitHub Pages**'e yayınlanır.
 
 ### Sitenin özellikleri
 * **Hero & Sunucuya Ekle** — OAuth davet butonu (Discord'a bot ekleme)
@@ -22,21 +22,21 @@ MEE6 tarzı tanıtım sitesi `web/` klasöründe bulunur ve **GitHub Actions** i
 > Site adresi: `https://<kullanici-adin>.github.io/<repo-adin>/`
 
 ### Davet linkini ayarlama
-`web/assets/data.json` dosyasında:
+`yeniwebsite/assets/js/data/config.js` dosyasında:
 
 ```json
-{
-  "clientId": "BOT_APPLICATION_ID_BURAYA",
-  "inviteUrl": ""
-}
+window.VYBOT_CONFIG = {
+  clientId: 'BOT_APPLICATION_ID_BURAYA',
+  inviteUrl: 'DISCORD_OAUTH_INVITE_URL'
+};
 ```
 
-* `clientId` girerseniz davet linki **otomatik oluşturulur** (permissions=8 Administrator).
+* `clientId` girerseniz davet linki **otomatik oluşturulur** (Administrator izni istemeyen, bot modüllerinin ihtiyaç duyduğu izinlerle).
 * Ya da `inviteUrl` alanına tam olarak kendi OAuth linkinizi yazabilirsiniz.
 
 ### Yerel önizleme (isteğe bağlı)
 ```bash
-cd web
+cd yeniwebsite
 python -m http.server 8080
 # → http://localhost:8080
 ```
@@ -97,7 +97,7 @@ python -m http.server 8080
 ### 2. Botu Sunucunuza Davet Edin
 1. **OAuth2** > **URL Generator** sekmesine gidin.
 2. **Scopes:** `bot` ve `applications.commands` seçin.
-3. **Bot Permissions:** `Administrator` (Yönetici) seçin.
+3. **Bot Permissions:** Bot modüllerinin ihtiyaç duyduğu izinleri seçin; `Administrator` varsayılan olarak gerekli değildir.
 4. Oluşan davet linkini tarayıcınızda açıp botu sunucunuza ekleyin.
 
 ### 3. Proje Yapılandırması (.env)
