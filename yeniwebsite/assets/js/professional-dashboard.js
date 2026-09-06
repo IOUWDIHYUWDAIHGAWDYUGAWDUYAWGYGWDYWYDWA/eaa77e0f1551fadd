@@ -277,7 +277,9 @@
     const items = [
       ['overview', 'Overview'], ['analytics', 'Analytics'], ['moderation', 'Moderation'],
       ['security', 'Security'], ['leveling', 'Leveling'], ['economy', 'Economy'],
-      ['welcome', 'Welcome'], ['tickets', 'Tickets'], ['logs', 'Logs'], ['settings', 'Settings'],
+      ['welcome', 'Welcome'], ['music', 'Music'], ['giveaway', 'Giveaway'],
+      ['roles', 'Role panels'], ['tickets', 'Tickets'], ['tools', 'Tools'],
+      ['leaderboard', 'Leaderboard'], ['logs', 'Logs'], ['settings', 'Settings'],
     ];
     return items.map(([id, label]) => `<button class="pro-nav-item ${state.view === id ? 'active' : ''}" data-pro-route="${id}"><span>${icons[id]}</span>${label}</button>`).join('');
   }
@@ -457,6 +459,85 @@ function welcomeView() {
       <div class="pro-view-heading"><div><span class="pro-eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(description)}</p></div><button class="pro-button primary" type="button" data-open-settings="1">Configure</button></div>
       <div class="pro-data-grid">${rows.map((r) => `<section class="pro-card pro-data-card"><span class="pro-data-icon">${r[0]}</span><div><h2>${esc(r[1])}</h2><p>${esc(r[2])}</p></div><strong>${esc(r[3])}</strong></section>`).join('')}</div>`;
   }
+
+  const WORKSPACES = {
+    moderation: {
+      title: 'Moderation center', eyebrow: 'Moderation', description: 'Keep every action accountable with live staff controls.',
+      toggles: [['mod_log_enabled', 'Moderation log', 'Record staff actions and audit events'], ['anti_spam', 'Anti-spam', 'Slow down repeated messages'], ['anti_swear', 'Word filter', 'Filter configured words']],
+      actions: [['Review warnings', 'Open the member warning workflow'], ['Open live logs', 'Inspect recent moderation events']],
+    },
+    security: {
+      title: 'Security center', eyebrow: 'Protection', description: 'Layered protection for channels, roles, links and raids.',
+      toggles: [['anti_nuke', 'Anti-nuke', 'Block destructive channel and role changes'], ['anti_link', 'Anti-link', 'Block advertising and invite links'], ['anti_spam', 'Anti-spam', 'Protect against message floods'], ['anti_swear', 'Anti-swear', 'Filter configured words']],
+      actions: [['Run security check', 'Review the current protection coverage'], ['Configure mod-log', 'Choose where security events are recorded']],
+    },
+    leveling: {
+      title: 'Leveling workspace', eyebrow: 'Engagement', description: 'Turn conversations into XP, ranks and rewards.',
+      toggles: [['leveling_enabled', 'XP engine', 'Grant XP when members participate'], ['leaderboard_enabled', 'Community leaderboard', 'Publish rankings and member progress']],
+      actions: [['Open leaderboard', 'See members with the most XP'], ['Configure rewards', 'Set role rewards for level milestones']],
+    },
+    economy: {
+      title: 'Economy workspace', eyebrow: 'Engagement', description: 'Make balances, rewards and daily activity meaningful.',
+      toggles: [['economy_enabled', 'Economy module', 'Enable balances, daily and rewards']],
+      actions: [['Open balances', 'Review economy activity from the bot'], ['Configure rewards', 'Tune daily rewards and currency']],
+    },
+    music: {
+      title: 'Music workspace', eyebrow: 'Voice', description: 'Control the voice player and make queue behavior predictable.',
+      toggles: [['music_enabled', 'Music player', 'Allow members to play music'], ['music_stay', 'Stay in channel', 'Keep VYBot connected after the queue ends']],
+      actions: [['Open queue', 'Inspect the active voice queue'], ['Voice controls', 'Skip, stop or leave the channel']],
+    },
+    giveaway: {
+      title: 'Giveaway workspace', eyebrow: 'Engagement', description: 'Create fair, visible giveaways with tracked entries.',
+      toggles: [['giveaway_enabled', 'Giveaway engine', 'Enable scheduled community giveaways']],
+      actions: [['Create giveaway', 'Start a button-based giveaway'], ['Entry tracking', 'Review active giveaway entries']],
+    },
+    roles: {
+      title: 'Role panels', eyebrow: 'Community', description: 'Give members a clear, interactive way to choose roles.',
+      toggles: [['role_panel_enabled', 'Role panels', 'Enable interactive role panels']],
+      actions: [['Create role panel', 'Publish a new selectable role panel'], ['Manage roles', 'Review self-assignable roles']],
+    },
+    tickets: {
+      title: 'Tickets workspace', eyebrow: 'Support', description: 'Give members a private, structured path to your staff team.',
+      toggles: [['ticket_enabled', 'Ticket system', 'Enable private support workflows']],
+      actions: [['Open ticket queue', 'Review active support requests'], ['Configure support team', 'Set staff access and channels']],
+    },
+    tools: {
+      title: 'Server tools', eyebrow: 'Utilities', description: 'Fast access to the operational tools that keep your server healthy.',
+      toggles: [['activity_tracking_enabled', 'Activity telemetry', 'Record member and message history']],
+      actions: [['Server info', 'Inspect live server and bot data'], ['Command explorer', 'Browse every available VYBot command']],
+    },
+  };
+
+  function workspaceView(view) {
+    const workspace = WORKSPACES[view];
+    if (!workspace) return null;
+    const guild = pguild();
+    const settings = (guild && guild.settings) || {};
+    const prefs = loadPrefs();
+    const value = (key) => Object.prototype.hasOwnProperty.call(prefs, key) ? prefs[key] : settings[key];
+    const toggles = workspace.toggles.map(([key, label, desc]) =>
+      `<section class="pro-card pro-setting-card" data-pref-group>${toggleHTML(key, label, desc, isSettingOn(value(key)))}<strong>${isSettingOn(value(key)) ? 'Active now' : 'Ready to enable'}</strong></section>`
+    ).join('');
+    const actions = workspace.actions.map(([label, desc], index) =>
+      `<button class="pro-action-card" type="button" data-workspace-action="${esc(view)}-${index}"><strong>${esc(label)}</strong><span>${esc(desc)}</span></button>`
+    ).join('');
+    return `
+      <div class="pro-view-heading"><div><span class="pro-eyebrow">${esc(workspace.eyebrow)}</span><h1>${esc(workspace.title)}</h1><p>${esc(workspace.description)}</p></div><div class="pro-heading-actions"><button class="pro-button ghost" type="button" data-toggle-all="1">Enable all</button><button class="pro-button primary" type="button" data-save="1">Save &amp; sync</button></div></div>
+      <div data-save-state="idle" class="pro-save-banner"><span class="i"></span><span class="t">Changes are stored locally in this browser.</span></div>
+      <div class="pro-settings-grid pro-workspace-grid">${toggles}</div>
+      <section class="pro-card pro-quick-actions"><div class="pro-card-head"><h2>Workspace actions</h2><span class="pro-live-chip">Connected to ${esc((guild && guild.name) || 'your server')}</span></div><div class="pro-action-grid">${actions}</div></section>
+      <section class="pro-card pro-workspace-status"><div class="pro-card-head"><h2>Live status</h2><span class="pro-live-chip">${hasLive() ? 'Telemetry connected' : 'Waiting for telemetry'}</span></div><div class="pro-health-grid">${statusRow('Bot status', guild && guild.botOnline ? 'Online' : 'Offline', guild && guild.botOnline ? 'good' : '')}${statusRow('Last sync', updatedAt() ? new Date(updatedAt()).toLocaleTimeString() : 'Waiting', '')}${statusRow('Members', guild ? fmtN(guild.memberCount) : '—', '')}</div></section>`;
+  }
+
+  function leaderboardView() {
+    const guild = pguild();
+    return `<div class="pro-view-heading"><div><span class="pro-eyebrow">Community</span><h1>Leaderboard</h1><p>Celebrate the members who keep ${esc((guild && guild.name) || 'your server')} active.</p></div><button class="pro-button primary" type="button" data-open-settings="1">Configure XP</button></div><section class="pro-card pro-table-card"><div class="pro-card-head"><h2>Top members</h2><span class="pro-live-chip">Live XP data</span></div>${lbRows(guild && guild.leaderboard, 20)}</section>`;
+  }
+
+  function logsView() {
+    const guild = pguild();
+    return `<div class="pro-view-heading"><div><span class="pro-eyebrow">Audit</span><h1>Live logs</h1><p>Recent events published by the bot telemetry stream.</p></div><button class="pro-button primary" type="button" data-open-settings="1">Configure logging</button></div><section class="pro-card pro-table-card"><div class="pro-card-head"><h2>Recent activity</h2><span class="pro-live-chip">${activityFor(guild).length} events</span></div>${activityRows(guild)}</section>`;
+  }
 const MODULE_VIEWS = {
     security: ['Security center', 'Protection', 'Keep your server safe with layered, transparent controls.',
       [['◈', 'Anti-Nuke', 'Channel and role deletion protection', 'Available'],
@@ -512,6 +593,10 @@ function contentFor(rootEl) {
     if (state.view === 'analytics') return analytics();
     if (state.view === 'welcome') return welcomeView();
     if (state.view === 'settings') return settingsView(rootEl);
+    if (state.view === 'leaderboard') return leaderboardView();
+    if (state.view === 'logs') return logsView();
+    const workspace = workspaceView(state.view);
+    if (workspace) return workspace;
     const mv = MODULE_VIEWS[state.view];
     if (mv) return genericView(...mv);
     return overview();
@@ -586,6 +671,22 @@ function contentFor(rootEl) {
       history.pushState({}, '', url);
       render();
     })
+    );
+    root.querySelectorAll('[data-workspace-action]').forEach((button) =>
+      button.addEventListener('click', () => {
+        const action = button.dataset.workspaceAction || '';
+        if (action === 'leveling-0') {
+          state.view = 'leaderboard';
+        } else if (action === 'tools-1') {
+          state.view = 'settings';
+        } else {
+          state.view = 'settings';
+        }
+        const url = new URL(location.href);
+        url.searchParams.set('view', state.view);
+        history.pushState({}, '', url);
+        render();
+      })
     );
 
     /* ---------- interaktif ayarlar ---------- */
