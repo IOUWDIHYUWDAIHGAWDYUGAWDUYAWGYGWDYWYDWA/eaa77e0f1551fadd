@@ -1,55 +1,21 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-require('dotenv').config();
-
-const keyHex = process.env.DECRYPTION_KEY || process.argv[2];
-
-if (!keyHex) {
-    console.error('❌ HATA: DECRYPTION_KEY belirtilmedi!');
-    console.log('Kullanım: node decrypt.js <ANAHTAR> veya DECRYPTION_KEY=<ANAHTAR> node decrypt.js');
-    process.exit(1);
-}
-
-const key = Buffer.from(keyHex.trim(), 'hex');
-if (key.length !== 32) {
-    console.error('❌ HATA: Geçersiz anahtar uzunluğu! 32 byte (64 hex karakter) olmalıdır.');
-    process.exit(1);
-}
-
-const bundlePath = path.join(__dirname, 'bundle.enc');
-if (!fs.existsSync(bundlePath)) {
-    console.error('❌ HATA: bundle.enc dosyası bulunamadı!');
-    process.exit(1);
-}
-
-try {
-    const bundle = fs.readFileSync(bundlePath);
-
-    // [12-byte IV][16-byte AuthTag][EncryptedData]
-    const iv = bundle.subarray(0, 12);
-    const authTag = bundle.subarray(12, 28);
-    const encryptedData = bundle.subarray(28);
-
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(authTag);
-
-    const decryptedBuffer = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
-    const archive = JSON.parse(decryptedBuffer.toString('utf8'));
-
-    let count = 0;
-    for (const [relPath, b64Content] of Object.entries(archive)) {
-        const fullPath = path.join(__dirname, relPath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(fullPath, Buffer.from(b64Content, 'base64'));
-        count++;
-    }
-
-    console.log(`✅ BAŞARILI: Toplam ${count} dosya şifresi çözülerek çıkartıldı!`);
-} catch (err) {
-    console.error('❌ ŞİFRE ÇÖZME BAŞARISIZ: Anahtar yanlış veya dosya bozulmuş!', err.message);
-    process.exit(1);
-}
+const crypto=require('crypto');
+const fs=require('fs');
+const path=require('path');
+const keyHex=process.argv[2];
+if(!keyHex){console.error('KULLANIM: node decrypt.js <HEX_KEY>');process.exit(1);}
+const key=Buffer.from(keyHex,'hex');
+if(key.length!==32){console.error('HATA: Anahtar 32 byte olmali.');process.exit(1);}
+const enc=fs.readFileSync('bundle.enc');
+const iv=enc.slice(0,16);
+const ciphertext=enc.slice(16);
+const decipher=crypto.createDecipheriv('aes-256-cbc',key,iv);
+const zip=Buffer.concat([decipher.update(ciphertext),decipher.final()]);
+fs.writeFileSync('src_decrypted.zip',zip);
+console.log('Decrypt tamam');
+const {execSync}=require('child_process');
+const srcDir=path.join(__dirname,'src');
+if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
+fs.mkdirSync(srcDir,{recursive:true});
+try{execSync('unzip -q src_decrypted.zip -d '+srcDir);}catch(e){execSync('powershell -Command "Expand-Archive -Path src_decrypted.zip -DestinationPath '+srcDir+' -Force"');}
+fs.unlinkSync('src_decrypted.zip');
+console.log('src/ hazir');
