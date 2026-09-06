@@ -1,4 +1,17 @@
-const config = window.VYBOT_CONFIG || {};
+const config = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      const live = window.VYBOT_CONFIG || {};
+      if (prop === 'clientId') return live.clientId || '1545157265831759903';
+      if (prop === 'oauthRedirectUri') {
+        return live.oauthRedirectUri || new URL('.', window.location.href).href;
+      }
+      if (prop === 'oauthScopes') return live.oauthScopes || 'identify guilds';
+      return live[prop];
+    },
+  }
+);
 const loginButton = document.getElementById('dash-login');
 const logoutButton = document.getElementById('dash-logout');
 const feedback = document.getElementById('dash-auth-feedback');
@@ -105,7 +118,7 @@ function redirectUri() {
 }
 
 function startLogin() {
-  if (!config.clientId || !config.oauthRedirectUri) {
+  if (!config.clientId) {
     setFeedback('OAuth callback is not configured for this deployment.', 'error');
     return;
   }
