@@ -57,14 +57,29 @@
       <div class="container">
         <span class="eyebrow" data-i18n="dash.eyebrow">Dashboard</span>
         <h1 class="title-3d" data-i18n="dash.title">Your server. Your rules.</h1>
-        <p class="lead" data-i18n="dash.lead">Configure VYBot exactly how your community needs it. The modules managed by the panel are already working inside the bot — the interface integration is on the way.</p>
+        <p class="lead" data-i18n="dash.lead">Sign in with Discord to see the servers you can manage. The first dashboard release keeps your account flow transparent and never asks for Administrator access.</p>
         <div class="hero-cta" style="margin-top:28px">
-          <button class="btn btn-primary btn-lg disabled" id="dash-login" type="button" aria-disabled="true">
+          <button class="btn btn-primary btn-lg" id="dash-login" type="button">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52c-.17-.38-.4-.87-.61-1.25a.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.08.08 0 0 0-.04-.12 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.08.08 0 0 1 .08-.01c3.93 1.8 8.19 1.8 11.86 0a.08.08 0 0 1 .08 0l.37.3a.08.08 0 0 1-.01.12c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6.03-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.07.07 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.22 0 2.18 1.1 2.16 2.42 0 1.34-.94 2.42-2.16 2.42z"/></svg>
             <span data-i18n="dash.login">Sign in with Discord</span>
           </button>
           <a class="btn btn-ghost btn-lg" data-invite href="#" target="_blank" rel="noopener noreferrer" data-i18n="dash.addfirst">Add the Bot First</a>
         </div>
+        <p class="auth-feedback" id="dash-auth-feedback" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="dashboard-session" id="dash-session" hidden>
+      <div class="container">
+        <div class="session-head">
+          <div>
+            <span class="eyebrow" data-i18n="dash.session.eyebrow">Connected account</span>
+            <h2 class="title" id="dash-user-name">Discord account</h2>
+            <p class="lead" data-i18n="dash.session.lead">Choose a server where you have permission to manage VYBot.</p>
+          </div>
+          <button class="btn btn-ghost" id="dash-logout" type="button" data-i18n="dash.logout">Sign out</button>
+        </div>
+        <div class="guild-grid" id="dash-guilds" aria-live="polite"></div>
       </div>
     </section>
 
@@ -126,7 +141,7 @@
 
         <div class="auth-note reveal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
-          <span><strong data-i18n="dash.auth.title">Transparent status:</strong> <span data-i18n="dash.auth.desc">Discord OAuth sign-in is not yet active — so the button is disabled. We do not show a fake sign-in flow; when the integration is ready, this page will open to server selection and module settings. Until then, use the /guvenlik, /seviye-odul and /panel-bagla commands in Discord for your server settings.</span></span>
+          <span><strong data-i18n="dash.auth.title">Connected securely:</strong> <span data-i18n="dash.auth.desc">Your Discord access token is kept in memory only and is cleared when you sign out or close the page.</span></span>
         </div>
       </div>
     </section>
@@ -171,20 +186,7 @@
   <script src="../assets/js/data/config.js"></script>
   <script src="../assets/js/data/i18n.js"></script>
   <script type="module" src="../assets/js/ui.js"></script>
-  <script>
-    (function () {
-      var cfg = window.VYBOT_CONFIG || {};
-      var btn = document.getElementById('dash-login');
-      if (btn && cfg.dashboardApiUrl) {
-        var a = document.createElement('a');
-        a.href = cfg.dashboardApiUrl + '/auth/discord';
-        a.className = btn.className.replace('disabled', '');
-        a.removeAttribute('aria-disabled');
-        a.innerHTML = btn.innerHTML;
-        btn.replaceWith(a);
-      }
-    })();
-  </script>
+  <script type="module" src="../assets/js/dashboard-auth.js"></script>
 </body>
 </html>
 
