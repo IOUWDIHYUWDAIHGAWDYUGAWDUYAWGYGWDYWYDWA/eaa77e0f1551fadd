@@ -17,7 +17,6 @@ const zip=Buffer.concat([decipher.update(ciphertext),decipher.final()]);
 fs.writeFileSync('bundle.zip',zip);
 console.log('Decrypt tamam: '+zip.length+' byte');
 
-// ZIP i /tmp/ altina ac
 const tmpDir='/tmp/vybot_'+Date.now();
 fs.mkdirSync(tmpDir,{recursive:true});
 
@@ -30,28 +29,25 @@ const pyScript=path.join(tmpDir,'extract.py');
 fs.writeFileSync(pyScript,pyCode,'utf8');
 execSync(`python3 "${pyScript}" bundle.zip "${tmpDir}"`,{encoding:'utf8'});
 
-// src/ klasorunu bul ve ana dizine tasi
 const srcDir=path.join(__dirname,'src');
 if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
+fs.mkdirSync(srcDir,{recursive:true});
 
 let extractedSrc=path.join(tmpDir,'src');
 if(fs.existsSync(extractedSrc)){
-  fs.renameSync(extractedSrc,srcDir);
-  console.log('src/ tasi (klasorden): '+srcDir);
+  fs.cpSync(extractedSrc,srcDir,{recursive:true});
+  console.log('src/ kopyalandi (klasorden)');
 }else{
-  fs.mkdirSync(srcDir,{recursive:true});
   const files=fs.readdirSync(tmpDir);
   for(const f of files){
-    try{fs.renameSync(path.join(tmpDir,f),path.join(srcDir,f));}catch(e){}
+    fs.cpSync(path.join(tmpDir,f),path.join(srcDir,f),{recursive:true});
   }
-  console.log('src/ tasi (dosyalardan): '+srcDir);
+  console.log('src/ kopyalandi (dosyalardan)');
 }
 
-// Log: src/ icerigi
 const srcFiles=fs.readdirSync(srcDir);
 console.log('src/ dosyalari: '+srcFiles.join(', '));
 
-// Temizlik
 fs.rmSync(tmpDir,{recursive:true});
 fs.unlinkSync('bundle.zip');
 console.log('Bot kaynak kodu hazir.');
