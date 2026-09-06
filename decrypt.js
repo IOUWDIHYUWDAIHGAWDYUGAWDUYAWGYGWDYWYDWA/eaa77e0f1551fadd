@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const { execSync } = require('child_process');
 
 const keyHex = process.argv[2];
@@ -116,14 +117,25 @@ const configPath = path.join(srcDir, 'config.js');
 if (fs.existsSync(configPath)) {
   const original = fs.readFileSync(configPath, 'utf8');
   try {
-    new Function(original);
+    new vm.Script(original, { filename: 'config.js' });
   } catch (err) {
     console.log('config.js syntax hatasi, virgul yamasi deneniyor:', err.message);
-    const patched = original.replace(/([^,\s])(\s*\r?\n\s*)(apiPort\s*:)/, '$1,$2$3');
+    const lineMatch = /config\.js:(\d+)/.exec(String(err.stack));
+    const errorLine = lineMatch ? Number(lineMatch[1]) : 55;
+    const nl = original.includes('\r\n') ? '\r\n' : '\n';
+    const lines = original.split(/\r?\n/);
+    for (let i = errorLine - 2; i >= 0; i--) {
+      const t = lines[i].trim();
+      if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) continue;
+      if (t.endsWith(',')) break;
+      lines[i] = lines[i].replace(/\s+$/, '') + ',';
+      break;
+    }
+    const patched = lines.join(nl);
     try {
-      new Function(patched);
+      new vm.Script(patched, { filename: 'config.js' });
       fs.writeFileSync(configPath, patched);
-      console.log('config.js duzeltildi (apiPort oncesi virgul).');
+      console.log('config.js duzeltildi (satir ' + errorLine + ' oncesi virgul).');
     } catch (err2) {
       console.error('config.js yama basarisiz:', err2.message);
       process.exit(1);
