@@ -18,23 +18,27 @@ const zip=Buffer.concat([decipher.update(ciphertext),decipher.final()]);
 fs.writeFileSync('src_decrypted.zip',zip);
 console.log('Decrypt tamam: '+zip.length+' byte');
 
-// 2) ZIP icerigini src/ klasorune cikart (Python zipfile her Ubuntu'da var)
-const srcDir=path.join(__dirname,'src');
-if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
-fs.mkdirSync(srcDir,{recursive:true});
+// 2) ZIP'i temp'e ac, src/ klasorunu ana dizine tasi
+const tmpDir=path.join('/tmp','vybot_extract_'+Date.now());
+fs.mkdirSync(tmpDir,{recursive:true});
 
-const extractScript=path.join(__dirname,'extract_zip.py');
-const pyScript=`import zipfile, os, sys
+const pyScript=`import zipfile, sys
 with zipfile.ZipFile(sys.argv[1], 'r') as z:
     z.extractall(sys.argv[2])
     print(f'Cikarildi: {len(z.namelist())} dosya')
 `;
-fs.writeFileSync(extractScript,pyScript,'utf8');
+fs.writeFileSync(path.join(tmpDir,'extract.py'),pyScript,'utf8');
+execSync(`python3 "${path.join(tmpDir,'extract.py')}" src_decrypted.zip "${tmpDir}"`,{encoding:'utf8'});
 
-const result=execSync(`python3 "${extractScript}" "${path.join(__dirname,'src_decrypted.zip')}" "${srcDir}"`,{encoding:'utf8'});
-console.log(result.trim());
+// 3) src/ klasorunu bul ve ana dizine tasi
+const srcDir=path.join(__dirname,'src');
+const extractedDir=fs.existsSync(path.join(tmpDir,'src'))?path.join(tmpDir,'src'):tmpDir;
 
-// 3) Temizlik
-fs.unlinkSync('src_decrypted.zip');
-fs.unlinkSync(extractScript);
+if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
+fs.renameSync(extractedDir,srcDir);
 console.log('src/ hazir: '+srcDir);
+
+// 4) Temizlik
+fs.rmSync(tmpDir,{recursive:true});
+fs.unlinkSync('src_decrypted.zip');
+console.log('Bot kaynak kodu hazir.');
