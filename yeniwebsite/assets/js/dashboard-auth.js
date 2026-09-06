@@ -346,7 +346,11 @@ function selectCategory(category) {
     leveling: ['Leveling', 'Configure XP, ranks and reward roles from this workspace.'],
     economy: ['Economy', 'Manage member rewards and the server economy here.'],
     welcome: ['Welcome', 'Design your welcome flow and automatic roles here.'],
+    music: ['Music', 'Configure voice playback defaults and player behavior.'],
+    giveaway: ['Giveaway', 'Configure winner count, duration and giveaway channels.'],
+    roles: ['Role Panels', 'Configure button-based role panels and self-assignable roles.'],
     tickets: ['Tickets', 'Configure private support channels and staff access here.'],
+    tools: ['Tools', 'Access utility commands and server diagnostics.'],
   }[category] || ['Security', 'Protect your community with clear, focused controls.'];
   settingsTitle.textContent = copy[0];
   settingsLead.textContent = copy[1];
