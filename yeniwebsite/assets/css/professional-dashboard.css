@@ -113,6 +113,7 @@
 @media (max-width: 1250px) { .pro-app { grid-template-columns: 190px minmax(0,1fr) 250px; } .pro-kpi-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 900px) { .pro-app { grid-template-columns: 178px minmax(0,1fr); } .pro-right-rail { display: none; } .pro-chart-grid, .pro-lower-grid { grid-template-columns: 1fr; } .pro-data-grid, .pro-settings-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 900px) { .pro-action-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 900px) { .pro-workspace-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-health-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .pro-app { display: block; } .pro-sidebar { border-right: 0; border-bottom: 1px solid rgba(146,168,216,.11); } .pro-main-nav { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-sidebar-footer { display: none; } .pro-header { height: auto; min-height: 58px; padding: 12px 16px; } .pro-header-actions { gap: 5px; } .pro-search { width: 120px; } .pro-user-button { display: none; } .pro-content { padding: 20px 14px 35px; } .pro-view-heading { align-items: start; flex-direction: column; } .pro-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .pro-kpi:last-child { grid-column: span 2; } .pro-data-grid, .pro-settings-grid { grid-template-columns: 1fr; } }
 /* VYBot — interaktif ayarlar (toggle) */
 .pro-signin { text-decoration: none; color: #9fd0ff; border: 1px solid rgba(43,127,255,.35); background: rgba(43,127,255,.1); border-radius: 999px; }
@@ -139,6 +140,10 @@
 .pro-action-card:hover { transform: translateY(-2px); border-color: rgba(63,141,255,.65); background: rgba(63,141,255,.1); }
 .pro-action-card strong { font-size: 12px; }
 .pro-action-card span { color: #8191ae; font-size: 10px; line-height: 1.45; }
+.pro-workspace-grid { grid-template-columns: repeat(4,minmax(0,1fr)); margin-bottom: 14px; }
+.pro-workspace-status { margin-top: 14px; }
+.pro-health-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.pro-health-grid .pro-health-row { border: 1px solid rgba(146,168,216,.08); border-radius: 8px; padding: 11px; background: rgba(146,168,216,.035); }
 .pro-save-banner.dirty { border-color: rgba(245,185,93,.4); background: rgba(245,185,93,.08); color: #f4d9a1; }
 .pro-save-banner.dirty .i { background: #f1bb4f; box-shadow: 0 0 8px rgba(241,187,79,.7); }
 .pro-save-banner.ok { border-color: rgba(85,224,164,.4); background: rgba(53,208,140,.1); color: #b3ead1; }
