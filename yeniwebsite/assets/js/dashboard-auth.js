@@ -228,9 +228,9 @@ function renderGuilds(guilds) {
 }
 
 function openGuildWindow(guildId) {
-  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=93f785c`, '_blank', 'popup,width=1440,height=960,resizable=yes,scrollbars=yes');
+  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=93f785c`, '_blank');
   if (!child) {
-    setFeedback('Allow pop-ups to open the server dashboard.', 'error');
+    setFeedback('Your browser blocked the new tab. Allow new tabs for this site and try again.', 'error');
     return;
   }
   const sendToken = () => child.postMessage({ type: 'vybot:dashboard-token', token: accessToken }, window.location.origin);
