@@ -38,3 +38,4 @@ window.VYBOT_CONFIG = {
 
   tunnelUrl:
     'https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/tunnel.json',
+};
