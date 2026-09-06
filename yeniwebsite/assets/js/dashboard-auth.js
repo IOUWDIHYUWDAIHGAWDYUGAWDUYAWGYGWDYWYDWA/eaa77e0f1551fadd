@@ -31,9 +31,11 @@ const childMode = Boolean(childGuildId);
 const stateKey = 'vybot_oauth_state';
 const verifierKey = 'vybot_oauth_verifier';
 const tokenKey = 'vybot_token';
+const discordRateLimitKey = 'vybot_discord_rate_limit_until';
 let accessToken = '';
 let installedGuildIds = new Set();
 let panelApiBase = '';
+const discordRequests = new Map();
 
 /* ---------- KALICI OTURUM (localStorage) ---------- */
 function saveToken(data) {
@@ -166,18 +168,39 @@ async function exchangeCode(code) {
 }
 
 async function discordRequest(path) {
-  const response = await fetch(`https://discord.com/api/v10${path}`, {
+  const rateLimitUntil = Number(localStorage.getItem(discordRateLimitKey) || 0);
+  if (rateLimitUntil > Date.now()) {
+    throw new Error(`Discord is temporarily rate limiting this browser. Try again in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)} seconds.`);
+  }
+
+  const existing = discordRequests.get(path);
+  if (existing) return existing;
+
+  const request = fetch(`https://discord.com/api/v10${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
+  }).then(async (response) => {
+    if (response.ok) {
+      localStorage.removeItem(discordRateLimitKey);
+      return response.json();
+    }
     if (response.status === 401) {
       accessToken = '';
       clearToken();
       throw new Error('Discord session expired. Sign in with Discord again.');
     }
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get('retry-after') || 30);
+      const retrySeconds = Math.max(1, Math.min(300, Math.ceil(retryAfter)));
+      localStorage.setItem(discordRateLimitKey, String(Date.now() + retrySeconds * 1000));
+      throw new Error(`Discord is temporarily rate limiting this browser. Try again in ${retrySeconds} seconds.`);
+    }
     throw new Error(`Discord account data could not be loaded (${response.status}).`);
-  }
-  return response.json();
+  }).finally(() => {
+    discordRequests.delete(path);
+  });
+
+  discordRequests.set(path, request);
+  return request;
 }
 
 function escapeHtml(value) {
@@ -465,12 +488,8 @@ Promise.resolve(loadToken()).then((restored) => {
       session.hidden = false;
       loginButton.hidden = true;
       setFeedback('Session restored. Still you.', 'success');
-    }).catch(() => {});
-  }).catch((error) => {
-    accessToken = '';
-    clearToken();
-    setFeedback(error.message, 'error');
-  });
+    }).catch((error) => setFeedback(error.message, 'error'));
+  }).catch((error) => setFeedback(error.message, 'error'));
 }).catch((error) => {
   accessToken = '';
   clearToken();
