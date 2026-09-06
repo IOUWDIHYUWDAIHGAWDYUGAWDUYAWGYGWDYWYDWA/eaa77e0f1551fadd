@@ -363,6 +363,7 @@ function overview() {
           <p><i class="pro-status-dot ${statusTone}"></i> ${statusTxt}<span class="pro-divider"> · </span>${members == null ? '—' : fmtN(members)} members<span class="pro-divider"> · </span>${latency == null ? '—' : latency}ms latency</p>
         </div>
         <div class="pro-heading-actions">
+          <button class="pro-button ghost" type="button" data-refresh-live="1">Refresh live data</button>
           <a class="pro-button primary" href="${esc(cfg.inviteUrl || '#')}" target="_blank" rel="noopener noreferrer">Invite Bot</a>
         </div>
       </div>
@@ -408,7 +409,7 @@ function analytics() {
   const historyMembers = historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']);
   const historyMessages = historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']);
   return `
-    <div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Live member, message, command and voice telemetry for ${esc(guildName)}.</p></div><button class="pro-button primary" type="button" data-open-settings="1">Open settings</button></div>
+    <div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Live member, message, command and voice telemetry for ${esc(guildName)}.</p></div><div class="pro-heading-actions"><button class="pro-button ghost" type="button" data-refresh-live="1">Refresh live data</button><button class="pro-button primary" type="button" data-open-settings="1">Open settings</button></div></div>
     <div class="pro-kpi-grid">
       ${metric('Total Members', members == null ? '—' : fmtN(members), has, '♙')}
       ${metric('Joins (session)', fmtN(guild && guild.joinsSession), has, '↗')}
@@ -726,6 +727,17 @@ function contentFor(rootEl) {
       history.pushState({}, '', url);
       render();
     })
+    );
+    root.querySelectorAll('[data-refresh-live]').forEach((button) =>
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        button.textContent = 'Refreshing…';
+        loadLive(false);
+        window.setTimeout(() => {
+          button.disabled = false;
+          button.textContent = 'Refresh live data';
+        }, 1200);
+      })
     );
     root.querySelectorAll('[data-workspace-action]').forEach((button) =>
       button.addEventListener('click', () => {
