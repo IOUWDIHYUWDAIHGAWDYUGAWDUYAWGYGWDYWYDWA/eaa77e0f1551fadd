@@ -108,7 +108,10 @@
   function chartPoints(values, color) {
     const points = listValue(values).map((item) => {
       if (typeof item === 'number') return item;
-      return Number(item && (item.value ?? item.count ?? item.members ?? item.messages)) || 0;
+      return Number(item && (
+        item.value ?? item.count ?? item.members ?? item.memberCount
+        ?? item.messages ?? item.messageCount ?? item.joins
+      )) || 0;
     });
     if (points.length < 2) return '';
     const max = Math.max(...points, 1);
@@ -119,13 +122,26 @@
       const y = 94 - ((value - min) / range) * 78;
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     }).join(' ');
-    return `<svg class="pro-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Live telemetry history"><polyline points="${coords}" fill="none" stroke="${color || '#55e0a4'}" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>`;
+    const area = `0,100 ${coords} 100,100`;
+    const dots = points.map((value, index) => {
+      const x = (index / (points.length - 1)) * 100;
+      const y = 94 - ((value - min) / range) * 78;
+      return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.5" fill="${color || '#55e0a4'}"></circle>`;
+    }).join('');
+    return `<svg class="pro-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Live telemetry history"><polygon points="${area}" fill="${color || '#55e0a4'}" opacity=".12"></polygon><polyline points="${coords}" fill="none" stroke="${color || '#55e0a4'}" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline><g vector-effect="non-scaling-stroke">${dots}</g></svg>`;
   }
 
   function historyFor(guild, keys) {
     for (const key of keys) {
       const value = guild && guild[key];
       if (Array.isArray(value) && value.length > 1) return value;
+    }
+    const containers = [guild && guild.history, guild && guild.telemetry, guild && guild.telemetryHistory];
+    for (const container of containers) {
+      for (const key of keys) {
+        const value = container && container[key];
+        if (Array.isArray(value) && value.length > 1) return value;
+      }
     }
     const stored = telemetryHistory(guild);
     if (keys.some((key) => key.toLowerCase().includes('member'))) return stored.members;
@@ -168,6 +184,10 @@
     if (points.length === 1) points = [{ value: 0 }, points[0]];
     const chart = chartPoints(points, '#55e0a4');
     return chart || emptyChart(`${label} history is collecting — the next bot sync will add the first points.`);
+  }
+
+  function historyLabel(values, fallback) {
+    return values.length > 1 ? `${values.length} live snapshots` : fallback;
   }
 
   function activityFor(guild) {
@@ -357,12 +377,12 @@ function overview() {
       <div class="pro-chart-grid">
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Member growth</span><h2>Community growth</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
-          <div class="pro-chart-meta"><strong>${members == null ? '—' : fmtN(members)}</strong><span>${members == null ? 'single snapshot, no history yet' : 'current members · single snapshot'}</span></div>
+          <div class="pro-chart-meta"><strong>${members == null ? '—' : fmtN(members)}</strong><span>${historyLabel(historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']), members == null ? 'waiting for live telemetry' : 'current members · collecting history')}</span></div>
           <div class="pro-chart-frame">${historyChart(historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']), 'Member')}</div>
         </section>
         <section class="pro-card">
           <div class="pro-card-head"><div><span class="pro-eyebrow">Server activity</span><h2>Messages per hour</h2></div><button class="pro-select" type="button">Live snapshot⌄</button></div>
-          <div class="pro-chart-meta"><strong>${fmtN((historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']).slice(-1)[0] || {}).value || 0)}</strong><span>messages in latest telemetry window</span></div>
+          <div class="pro-chart-meta"><strong>${fmtN(guild && (guild.messages24h ?? guild.messages ?? 0))}</strong><span>${historyLabel(historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']), 'latest telemetry window')}</span></div>
           <div class="pro-chart-frame">${historyChart(historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']), 'Message')}</div>
         </section>
       </div>
