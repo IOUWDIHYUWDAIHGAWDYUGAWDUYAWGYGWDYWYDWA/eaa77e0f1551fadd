@@ -115,30 +115,46 @@ if (!fs.existsSync(deployPath) || !fs.existsSync(indexPath)) {
 
 const configPath = path.join(srcDir, 'config.js');
 if (fs.existsSync(configPath)) {
-  const original = fs.readFileSync(configPath, 'utf8');
-  try {
-    new vm.Script(original, { filename: 'config.js' });
-  } catch (err) {
-    console.log('config.js syntax hatasi, virgul yamasi deneniyor:', err.message);
-    const lineMatch = /config\.js:(\d+)/.exec(String(err.stack));
-    const errorLine = lineMatch ? Number(lineMatch[1]) : 55;
-    const nl = original.includes('\r\n') ? '\r\n' : '\n';
-    const lines = original.split(/\r?\n/);
-    for (let i = errorLine - 2; i >= 0; i--) {
-      const t = lines[i].trim();
-      if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) continue;
-      if (t.endsWith(',')) break;
-      lines[i] = lines[i].replace(/\s+$/, '') + ',';
-      break;
-    }
-    const patched = lines.join(nl);
+  let current = fs.readFileSync(configPath, 'utf8');
+  let patches = 0;
+  const maxPatches = 30;
+  while (patches <= maxPatches) {
     try {
-      new vm.Script(patched, { filename: 'config.js' });
-      fs.writeFileSync(configPath, patched);
-      console.log('config.js duzeltildi (satir ' + errorLine + ' oncesi virgul).');
-    } catch (err2) {
-      console.error('config.js yama basarisiz:', err2.message);
-      process.exit(1);
+      new vm.Script(current, { filename: 'config.js' });
+      if (patches > 0) {
+        fs.writeFileSync(configPath, current);
+        console.log('config.js duzeltildi (' + patches + ' virgul).');
+      }
+      break;
+    } catch (err) {
+      if (patches === maxPatches) {
+        console.error('config.js yama basarisiz:', err.message);
+        process.exit(1);
+      }
+      const lineMatch = /config\.js:(\d+)/.exec(String(err.stack));
+      const errorLine = lineMatch ? Number(lineMatch[1]) : 0;
+      if (!errorLine) {
+        console.error('config.js yama basarisiz:', err.message);
+        process.exit(1);
+      }
+      console.log('config.js syntax: ' + err.message + ' (satir ' + errorLine + ')');
+      const nl = current.includes('\r\n') ? '\r\n' : '\n';
+      const lines = current.split(/\r?\n/);
+      let changed = false;
+      for (let i = errorLine - 2; i >= 0; i--) {
+        const t = lines[i].trim();
+        if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) continue;
+        if (t.endsWith(',')) break;
+        lines[i] = lines[i].replace(/\s+$/, '') + ',';
+        changed = true;
+        break;
+      }
+      if (!changed) {
+        console.error('config.js yama basarisiz:', err.message);
+        process.exit(1);
+      }
+      current = lines.join(nl);
+      patches += 1;
     }
   }
 }
