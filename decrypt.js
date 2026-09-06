@@ -26,28 +26,36 @@ console.log('Decrypt tamam: ' + zip.length + ' byte');
 const tmpDir = '/tmp/vybot_' + Date.now();
 fs.mkdirSync(tmpDir, { recursive: true });
 
-// Windows ZIP girdileri `src\file.js` tutar; Linux'ta bu bir klasor degil dosya adidir.
-const pyCode = `
-import zipfile, sys, os
-dest_root = sys.argv[2]
-with zipfile.ZipFile(sys.argv[1], "r") as z:
-    for info in z.infolist():
-        name = info.filename.replace("\\\\", "/").replace("\\", "/")
-        parts = [p for p in name.split("/") if p and p not in (".", "..")]
-        if not parts:
-            continue
-        target = os.path.join(dest_root, *parts)
-        if info.is_dir() or name.endswith("/"):
-            os.makedirs(target, exist_ok=True)
-            continue
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-        with z.open(info) as src, open(target, "wb") as out:
-            out.write(src.read())
-    print("Cikarildi: %d dosya" % len(z.namelist()))
-`;
 const pyScript = path.join(tmpDir, 'extract.py');
-fs.writeFileSync(pyScript, pyCode, 'utf8');
+fs.writeFileSync(
+  pyScript,
+  [
+    'import zipfile, sys',
+    'with zipfile.ZipFile(sys.argv[1], "r") as z:',
+    '    z.extractall(sys.argv[2])',
+    '    print("Cikarildi: %d dosya" % len(z.namelist()))',
+  ].join('\n'),
+  'utf8'
+);
 execSync(`python3 "${pyScript}" bundle.zip "${tmpDir}"`, { encoding: 'utf8', stdio: 'inherit' });
+
+function rewriteWindowsZipNames(root) {
+  for (const name of fs.readdirSync(root)) {
+    const full = path.join(root, name);
+    if (name === 'extract.py') continue;
+    if (name.includes('\\') || name.includes('/')) {
+      const parts = name.replace(/\\/g, '/').split('/').filter((p) => p && p !== '.' && p !== '..');
+      if (!parts.length) continue;
+      const dest = path.join(root, ...parts);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.renameSync(full, dest);
+      continue;
+    }
+    if (fs.statSync(full).isDirectory()) rewriteWindowsZipNames(full);
+  }
+}
+
+rewriteWindowsZipNames(tmpDir);
 
 function hasBotEntry(dir) {
   return fs.existsSync(path.join(dir, 'index.js')) || fs.existsSync(path.join(dir, 'deploy-commands.js'));
@@ -74,7 +82,7 @@ if (hasBotEntry(extractedSrc)) {
   process.exit(1);
 }
 
-function listFiles(dir, prefix = '') {
+function listFiles(dir, prefix) {
   const out = [];
   for (const name of fs.readdirSync(dir)) {
     const full = path.join(dir, name);
@@ -85,7 +93,7 @@ function listFiles(dir, prefix = '') {
   return out;
 }
 
-const srcFiles = listFiles(srcDir);
+const srcFiles = listFiles(srcDir, '');
 console.log('src/ kaynagi: ' + copiedFrom);
 console.log('src/ dosyalari: ' + srcFiles.join(', '));
 
