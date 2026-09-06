@@ -169,7 +169,14 @@ async function discordRequest(path) {
   const response = await fetch(`https://discord.com/api/v10${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!response.ok) throw new Error('Discord account data could not be loaded.');
+  if (!response.ok) {
+    if (response.status === 401) {
+      accessToken = '';
+      clearToken();
+      throw new Error('Discord session expired. Sign in with Discord again.');
+    }
+    throw new Error(`Discord account data could not be loaded (${response.status}).`);
+  }
   return response.json();
 }
 
@@ -440,8 +447,8 @@ document.getElementById('dash-save')?.addEventListener('click', () => {
 });
 
 /* Sayfa yenilendiğinde kalıcı oturum */
-const restored = loadToken();
-if (restored) {
+Promise.resolve(loadToken()).then((restored) => {
+  if (!restored) return;
   accessToken = restored;
   discordRequest('/users/@me').then((user) => {
     userName.textContent = user.global_name || user.username;
@@ -456,8 +463,16 @@ if (restored) {
       loginButton.hidden = true;
       setFeedback('Session restored. Still you.', 'success');
     }).catch(() => {});
-  }).catch(() => {});
-}
+  }).catch((error) => {
+    accessToken = '';
+    clearToken();
+    setFeedback(error.message, 'error');
+  });
+}).catch((error) => {
+  accessToken = '';
+  clearToken();
+  setFeedback(error.message, 'error');
+});
 
 enterChildMode();
 completeLogin().catch((error) => {
