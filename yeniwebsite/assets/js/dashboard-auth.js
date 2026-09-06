@@ -151,7 +151,7 @@ function renderGuilds(guilds) {
 }
 
 function openGuildWindow(guildId) {
-  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=f7d2c99`, '_blank', 'popup,width=1440,height=960,resizable=yes,scrollbars=yes');
+  const child = window.open(`./?guild=${encodeURIComponent(guildId)}&view=manage&release=93f785c`, '_blank', 'popup,width=1440,height=960,resizable=yes,scrollbars=yes');
   if (!child) {
     setFeedback('Allow pop-ups to open the server dashboard.', 'error');
     return;
@@ -272,10 +272,11 @@ async function completeLogin() {
 function enterChildMode() {
   if (!childMode) return;
   document.body.classList.add('dashboard-child');
+  document.getElementById('pro-dashboard').hidden = false;
   document.querySelector('.page-hero').hidden = true;
   document.querySelector('.dashboard-session').hidden = true;
   document.querySelector('.section').hidden = true;
-  settings.hidden = false;
+  settings.hidden = true;
   window.opener.postMessage({ type: 'vybot:dashboard-ready' }, window.location.origin);
   window.addEventListener('message', async (event) => {
     if (event.origin !== window.location.origin || event.data?.type !== 'vybot:dashboard-token') return;
