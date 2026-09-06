@@ -97,6 +97,9 @@
   function emptyChart(text) { return `<div class="pro-chart-empty">${esc(text)}</div>`; }
 
   function rankCls(i) { return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : ''; }
+  function isSettingOn(value) {
+    return value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
+  }
 
   function listValue(value) {
     return Array.isArray(value) ? value : [];
@@ -274,9 +277,7 @@
     const items = [
       ['overview', 'Overview'], ['analytics', 'Analytics'], ['moderation', 'Moderation'],
       ['security', 'Security'], ['leveling', 'Leveling'], ['economy', 'Economy'],
-      ['welcome', 'Welcome'], ['music', 'Music'], ['giveaway', 'Giveaway'],
-      ['roles', 'Role Panels'], ['tickets', 'Tickets'], ['tools', 'Tools'],
-      ['logs', 'Logs'], ['settings', 'Settings'],
+      ['welcome', 'Welcome'], ['tickets', 'Tickets'], ['logs', 'Logs'], ['settings', 'Settings'],
     ];
     return items.map(([id, label]) => `<button class="pro-nav-item ${state.view === id ? 'active' : ''}" data-pro-route="${id}"><span>${icons[id]}</span>${label}</button>`).join('');
   }
@@ -347,20 +348,50 @@ function analytics() {
     const members = guild && guild.memberCount != null ? guild.memberCount : null;
     const guildName = (guild && guild.name) || 'No server connected';
     const has = hasLive();
-    return `
-      <div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Member, message, command and voice telemetry for ${esc(guildName)}.</p></div></div>
-      <div class="pro-kpi-grid">
-        ${metric('Total Members', members == null ? '—' : fmtN(members), has, '♙')}
-        ${metric('New Members (30d)', '—', false, '↗')}
-        ${metric('Messages (24h)', '—', false, '▰')}
-        ${metric('Commands Used', '—', false, '⌁')}
-        ${metric('Voice Minutes', '—', false, '◉')}
-      </div>
-      <div class="pro-chart-grid">
-        <section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth</h2><span class="pro-live-chip">Live history</span></div><div class="pro-chart-frame">${historyChart(historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']), 'Member')}</div></section>
-        <section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2><span class="pro-live-chip">Live history</span></div><div class="pro-chart-frame">${historyChart(historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']), 'Message')}</div></section>
-      </div>`;
-  }
+  const historyMembers = historyFor(guild, ['memberHistory', 'memberGrowth', 'membersHistory']);
+  const historyMessages = historyFor(guild, ['messageHistory', 'messagesHistory', 'activityHistory']);
+  return `
+    <div class="pro-view-heading"><div><span class="pro-eyebrow">Analytics</span><h1>Understand your community</h1><p>Live member, message, command and voice telemetry for ${esc(guildName)}.</p></div><button class="pro-button primary" type="button" data-open-settings="1">Open settings</button></div>
+    <div class="pro-kpi-grid">
+      ${metric('Total Members', members == null ? '—' : fmtN(members), has, '♙')}
+      ${metric('Joins (session)', fmtN(guild && guild.joinsSession), has, '↗')}
+      ${metric('Messages (24h)', fmtN(guild && guild.messages24h), has, '▰')}
+      ${metric('Commands Used', fmtN(guild && guild.commandsUsed), has, '⌁')}
+      ${metric('In voice now', fmtN(guild && guild.voiceNow), has, '◉')}
+    </div>
+    <div class="pro-chart-grid">
+      <section class="pro-card pro-chart-large"><div class="pro-card-head"><h2>Member growth</h2><span class="pro-live-chip">${historyMembers.length} points</span></div><div class="pro-chart-frame">${historyMembers.length ? historyChart(historyMembers, 'Member') : emptyChart('Collecting member snapshots while the bot host is online.')}</div></section>
+      <section class="pro-card"><div class="pro-card-head"><h2>Messages · 24 hours</h2><span class="pro-live-chip">Live history</span></div><div class="pro-chart-frame">${historyMessages.length ? historyChart(historyMessages, 'Message') : emptyChart('Message counts fill as members chat while the bot is online.')}</div></section>
+    </div>
+    <section class="pro-card pro-quick-actions"><div class="pro-card-head"><h2>Quick actions</h2><span class="pro-live-chip">Workspace shortcuts</span></div><div class="pro-action-grid">
+      <button class="pro-action-card" type="button" data-open-settings="1"><strong>Open settings</strong><span>Adjust modules and sync them to the bot.</span></button>
+      <button class="pro-action-card" type="button" data-pro-route="leaderboard"><strong>Open leaderboard</strong><span>See the most active members and XP.</span></button>
+      <button class="pro-action-card" type="button" data-pro-route="logs"><strong>Jump to live logs</strong><span>Review the latest bot and community activity.</span></button>
+      <button class="pro-action-card" type="button" data-pro-route="leveling"><strong>Boost XP now</strong><span>Configure rewards that keep members engaged.</span></button>
+    </div></section>`;
+}
+
+function welcomeView() {
+  const guild = pguild();
+  const settings = (guild && guild.settings) || {};
+  const prefs = loadPrefs();
+  const enabled = isSettingOn(Object.prototype.hasOwnProperty.call(prefs, 'welcome_enabled') ? prefs.welcome_enabled : settings.welcome_enabled);
+  const autoRole = isSettingOn(Object.prototype.hasOwnProperty.call(prefs, 'auto_role_enabled') ? prefs.auto_role_enabled : settings.auto_role_enabled);
+  const joins = Number(guild && (guild.joinsSession ?? guild.joins)) || 0;
+  const leaves = Number(guild && (guild.leavesSession ?? guild.leaves)) || 0;
+  return `
+    <div class="pro-view-heading"><div><span class="pro-eyebrow">Onboarding</span><h1>Welcome</h1><p>Default welcome is configured on the bot.</p></div></div>
+    <div data-save-state="idle" class="pro-save-banner"><span class="i"></span><span class="t">Changes are stored locally in this browser.</span></div>
+    <div class="pro-heading-actions pro-welcome-actions"><button class="pro-button primary" type="button" data-save="1">Save &amp; sync</button></div>
+    <div class="pro-settings-grid pro-welcome-grid">
+      <section class="pro-card pro-setting-card" data-pref-group>${toggleHTML('welcome_enabled', 'Enable welcome', 'Greet new members', enabled)}</section>
+      <section class="pro-card pro-setting-card" data-pref-group>${toggleHTML('auto_role_enabled', 'Enable auto-role', 'Assign /otorol on join', autoRole)}</section>
+    </div>
+    <div class="pro-kpi-grid pro-welcome-kpis">
+      ${metric('Joins this session', fmtN(joins), hasLive(), '⌂')}
+      ${metric('Leaves', fmtN(leaves), hasLive(), '↘')}
+    </div>`;
+}
 
   function settingsView(rootEl) {
     const guild = pguild();
@@ -371,8 +402,7 @@ function analytics() {
     // kullanıcı değiştirirse localStorage'daki tercih kazanır.
     const val = (key) => (key in prefs ? prefs[key] : settings[key] != null ? String(settings[key]) : '');
 
-    const isOn = (value) => value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
-    const sw = (key, label, desc) => toggleHTML(key, label, desc, isOn(val(key)));
+    const sw = (key, label, desc) => toggleHTML(key, label, desc, isSettingOn(val(key)));
     const guildLabel = guild ? esc(guild.name) : 'No server connected';
     const editNote = cfg.dashboardApiUrl
       ? 'Değişiklikler sunucuya gönderilir.'
@@ -480,6 +510,7 @@ const MODULE_VIEWS = {
 function contentFor(rootEl) {
     if (state.view === 'overview') return overview();
     if (state.view === 'analytics') return analytics();
+    if (state.view === 'welcome') return welcomeView();
     if (state.view === 'settings') return settingsView(rootEl);
     const mv = MODULE_VIEWS[state.view];
     if (mv) return genericView(...mv);
