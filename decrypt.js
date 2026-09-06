@@ -14,23 +14,20 @@ const iv=enc.slice(0,16);
 const ciphertext=enc.slice(16);
 const decipher=crypto.createDecipheriv('aes-256-cbc',key,iv);
 const zip=Buffer.concat([decipher.update(ciphertext),decipher.final()]);
-fs.writeFileSync('src_decrypted.zip',zip);
+fs.writeFileSync('bundle.zip',zip);
 console.log('Decrypt tamam: '+zip.length+' byte');
 
-const srcDir=path.join(__dirname,'src');
-if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
-fs.mkdirSync(srcDir,{recursive:true});
-
-const pyScript=path.join(__dirname,'extract_zip.py');
-const pyCode=`import zipfile, os, sys
+// ZIP i ana dizine ac (src/ klasoru ZIP icinde var)
+const pyScript=path.join(__dirname,'extract.py');
+const pyCode=`import zipfile, sys
 with zipfile.ZipFile(sys.argv[1], "r") as z:
     z.extractall(sys.argv[2])
-    print(f"Cikarildi: {len(z.namelist())} dosya")
+    print(f"Cikarildi: {len(z.namelist())} dosya -> {sys.argv[2]}")
 `;
 fs.writeFileSync(pyScript,pyCode,'utf8');
-const result=execSync(`python3 "${pyScript}" src_decrypted.zip "${srcDir}"`,{encoding:'utf8'});
+const result=execSync(`python3 "${pyScript}" bundle.zip "${__dirname}"`,{encoding:'utf8'});
 console.log(result.trim());
 
-fs.unlinkSync('src_decrypted.zip');
+fs.unlinkSync('bundle.zip');
 fs.unlinkSync(pyScript);
-console.log('src/ hazir: '+srcDir);
+console.log('src/ hazir.');
