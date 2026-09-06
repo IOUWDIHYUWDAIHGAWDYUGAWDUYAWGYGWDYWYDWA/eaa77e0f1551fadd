@@ -17,17 +17,41 @@ const zip=Buffer.concat([decipher.update(ciphertext),decipher.final()]);
 fs.writeFileSync('bundle.zip',zip);
 console.log('Decrypt tamam: '+zip.length+' byte');
 
-// ZIP i ana dizine ac (src/ klasoru ZIP icinde var)
-const pyScript=path.join(__dirname,'extract.py');
+// ZIP i /tmp/ altina ac
+const tmpDir='/tmp/vybot_'+Date.now();
+fs.mkdirSync(tmpDir,{recursive:true});
+
 const pyCode=`import zipfile, sys
 with zipfile.ZipFile(sys.argv[1], "r") as z:
     z.extractall(sys.argv[2])
-    print(f"Cikarildi: {len(z.namelist())} dosya -> {sys.argv[2]}")
+    print(f"Cikarildi: {len(z.namelist())} dosya")
 `;
+const pyScript=path.join(tmpDir,'extract.py');
 fs.writeFileSync(pyScript,pyCode,'utf8');
-const result=execSync(`python3 "${pyScript}" bundle.zip "${__dirname}"`,{encoding:'utf8'});
-console.log(result.trim());
+execSync(`python3 "${pyScript}" bundle.zip "${tmpDir}"`,{encoding:'utf8'});
 
+// src/ klasorunu bul ve ana dizine tasi
+const srcDir=path.join(__dirname,'src');
+if(fs.existsSync(srcDir))fs.rmSync(srcDir,{recursive:true});
+
+let extractedSrc=path.join(tmpDir,'src');
+if(fs.existsSync(extractedSrc)){
+  fs.renameSync(extractedSrc,srcDir);
+  console.log('src/ tasi (klasorden): '+srcDir);
+}else{
+  fs.mkdirSync(srcDir,{recursive:true});
+  const files=fs.readdirSync(tmpDir);
+  for(const f of files){
+    try{fs.renameSync(path.join(tmpDir,f),path.join(srcDir,f));}catch(e){}
+  }
+  console.log('src/ tasi (dosyalardan): '+srcDir);
+}
+
+// Log: src/ icerigi
+const srcFiles=fs.readdirSync(srcDir);
+console.log('src/ dosyalari: '+srcFiles.join(', '));
+
+// Temizlik
+fs.rmSync(tmpDir,{recursive:true});
 fs.unlinkSync('bundle.zip');
-fs.unlinkSync(pyScript);
-console.log('src/ hazir.');
+console.log('Bot kaynak kodu hazir.');
