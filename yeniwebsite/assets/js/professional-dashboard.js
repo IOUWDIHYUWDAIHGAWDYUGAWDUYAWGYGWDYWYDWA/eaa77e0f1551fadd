@@ -37,6 +37,7 @@
     error: false,
     lastKey: '',  // son render anahtarı — sessiz yenileme veri değişmeden render atlamaz
     tunnelUrl: '',
+    liveRequest: null,
   };
 
   /* ---------- yardımcılar ---------- */
@@ -732,11 +733,10 @@ function contentFor(rootEl) {
       button.addEventListener('click', () => {
         button.disabled = true;
         button.textContent = 'Refreshing…';
-        loadLive(false);
-        window.setTimeout(() => {
+        loadLive(false).finally(() => {
           button.disabled = false;
           button.textContent = 'Refresh live data';
-        }, 1200);
+        });
       })
     );
     root.querySelectorAll('[data-workspace-action]').forEach((button) =>
@@ -802,8 +802,9 @@ function contentFor(rootEl) {
 
   function loadLive(silent) {
     if (!liveDataUrl) { state.loading = false; state.error = true; render(); return; }
+    if (state.liveRequest) return state.liveRequest;
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
-    Promise.race([
+    state.liveRequest = Promise.race([
       fetch(liveDataUrl, { cache: 'no-store' }).then((r) => {
         if (!r.ok) throw new Error('http ' + r.status);
         return r.json();
@@ -859,7 +860,11 @@ function contentFor(rootEl) {
           state.error = true;
           render();
         }
+      })
+      .finally(() => {
+        state.liveRequest = null;
       });
+    return state.liveRequest;
   }
 
   window.addEventListener('popstate', () => {
