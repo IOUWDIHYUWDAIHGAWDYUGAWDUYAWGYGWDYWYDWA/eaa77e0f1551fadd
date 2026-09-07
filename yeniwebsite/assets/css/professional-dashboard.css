@@ -1,7 +1,7 @@
 #pro-dashboard { min-height: 100vh; background: #07101e; color: #e9f0ff; font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; }
 #pro-dashboard[hidden] { display: none; }
 .pro-app { display: grid; grid-template-columns: 212px minmax(0, 1fr) 286px; min-height: 100vh; background: radial-gradient(80% 80% at 50% -15%, rgba(43,127,255,.1), transparent 66%), #07101e; }
-.pro-sidebar { display: flex; flex-direction: column; padding: 24px 14px 18px; border-right: 1px solid rgba(146,168,216,.11); background: rgba(4,10,20,.7); }
+.pro-sidebar { display: flex; flex-direction: column; min-height: 0; padding: 24px 14px 18px; border-right: 1px solid rgba(146,168,216,.11); background: rgba(4,10,20,.7); }
 .pro-brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 25px; font-size: 19px; letter-spacing: -.04em; }
 .pro-brand > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(145deg,#4d95ff,#1351b8); color: white; font-weight: 800; box-shadow: 0 8px 24px rgba(43,127,255,.28); }
 .pro-server-select { display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px; border: 1px solid rgba(146,168,216,.13); border-radius: 10px; background: rgba(146,168,216,.05); color: #e9f0ff; text-align: left; }
@@ -10,7 +10,7 @@
 .pro-server-select small { color: #70809e; font-size: 10px; }
 .pro-server-select b { color: #7887a4; font-size: 12px; }
 .pro-server-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #2569dd; color: white; font-weight: 800; }
-.pro-main-nav { display: grid; gap: 4px; margin-top: 26px; }
+.pro-main-nav { display: grid; gap: 4px; min-height: 0; margin-top: 26px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(77,149,255,.35) transparent; }
 .pro-nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border: 1px solid transparent; border-radius: 9px; color: #7e8da9; text-align: left; font-size: 12px; transition: 160ms ease; }
 .pro-nav-item span { display: grid; place-items: center; width: 17px; color: #7c91b4; font-size: 15px; }
 .pro-nav-item:hover { color: #e9f0ff; background: rgba(43,127,255,.08); }
