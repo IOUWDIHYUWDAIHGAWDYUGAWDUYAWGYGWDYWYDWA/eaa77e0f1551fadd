@@ -1,10 +1,10 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-07T08:33:23.699Z",
+  "updatedAt": "2026-09-07T08:34:23.702Z",
   "bot": {
     "username": "Vybot#0084",
     "avatar": "https://cdn.discordapp.com/avatars/1545157265831759903/6fa69786a7cefc30c52d87682e182a11.webp?size=128",
-    "uptimeSeconds": 12181,
+    "uptimeSeconds": 12241,
     "guildCount": 1,
     "ping": 46
   },
@@ -40,7 +40,7 @@
           "name": "Vynex",
           "avatar": "https://cdn.discordapp.com/avatars/918541990877089842/5560bed278015b4e41ce8aba94e85b2e.webp?size=64",
           "level": 0,
-          "xp": 19
+          "xp": 37
         }
       ]
     }
