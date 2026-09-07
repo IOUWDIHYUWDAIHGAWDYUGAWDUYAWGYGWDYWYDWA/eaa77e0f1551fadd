@@ -23,7 +23,7 @@
   const icons = {
     overview: '◉', analytics: '⌁', moderation: '◒', security: '◈',
     leveling: '✦', economy: '◌', welcome: '⌂', music: '♫', giveaway: '✧',
-    roles: '◆', tickets: '□', tools: '≡', logs: '☷', settings: '⚙',
+    roles: '◆', tickets: '□', tools: '≡', leaderboard: '☷', logs: '☷', settings: '⚙',
   };
 
   const state = {
@@ -171,7 +171,8 @@
       if (!id) return;
       const history = telemetryHistory(guild);
       const memberValue = Number(guild.memberCount);
-      const messageValue = Number(guild.messages24h ?? guild.messages ?? guild.messageCount);
+      const rawMessageValue = guild.messages24h ?? guild.messages ?? guild.messageCount;
+      const messageValue = rawMessageValue == null ? 0 : Number(rawMessageValue);
       if (Number.isFinite(memberValue)) history.members.push({ value: memberValue, timestamp: data.updatedAt });
       if (Number.isFinite(messageValue)) history.messages.push({ value: messageValue, timestamp: data.updatedAt });
       history.members = history.members.slice(-24);
