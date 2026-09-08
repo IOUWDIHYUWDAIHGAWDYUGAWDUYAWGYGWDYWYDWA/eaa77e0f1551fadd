@@ -1,70 +1,50 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-
-// 256-bit (32 bytes) Gizli Anahtar
-let keyHex = process.env.DECRYPTION_KEY || process.argv[2];
-if (!keyHex) {
-    keyHex = '70fcb19a947ab2e4b5a80192e5654f1fbb74f29f811175dd6e84a017a119a768';
+'use strict';
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const { readKey, encrypt, decrypt } = require('./scripts/bundle-crypto');
+let temp;
+let outputTemp;
+try {
+  const key = readKey();
+  const root = __dirname;
+  if (!fs.existsSync(path.join(root, 'src/index.js')) || !fs.existsSync(path.join(root, 'src/deploy-commands.js'))) {
+    throw new Error('src/index.js and src/deploy-commands.js are required.');
+  }
+  temp = fs.mkdtempSync(path.join(os.tmpdir(), 'vybot-pack-'));
+  const zipPath = path.join(temp, 'source.zip');
+  const script = `import os, pathlib, sys, zipfile
+root = pathlib.Path(sys.argv[1])
+with zipfile.ZipFile(sys.argv[2], 'w', zipfile.ZIP_DEFLATED) as z:
+    for current, dirs, names in os.walk(root / 'src', followlinks=False):
+        for name in dirs + names:
+            if (pathlib.Path(current) / name).is_symlink():
+                raise ValueError('Symlinks are not allowed')
+        for name in sorted(names):
+            p = pathlib.Path(current) / name
+            if name == '.env' or name.startswith('.env.') or name == 'cookies.txt':
+                raise ValueError('Keep runtime credentials outside the source archive')
+            z.write(p, p.relative_to(root).as_posix())
+    runner = root / 'runner.js'
+    if runner.is_symlink():
+        raise ValueError('Symlinks are not allowed')
+    if runner.is_file():
+        z.write(runner, 'runner.js')
+os.chmod(sys.argv[2], 0o600)
+`;
+  execFileSync('python3', ['-c', script, root, zipPath], { stdio: 'pipe' });
+  const plain = fs.readFileSync(zipPath);
+  const sealed = encrypt(plain, key);
+  if (!decrypt(sealed, key).equals(plain)) throw new Error('Encryption round-trip verification failed.');
+  outputTemp = path.join(root, '.bundle.enc-' + process.pid + '.tmp');
+  fs.writeFileSync(outputTemp, sealed, { mode: 0o600, flag: 'wx' });
+  fs.renameSync(outputTemp, path.join(root, 'bundle.enc'));
+  console.log('bundle.enc created: authenticated encryption and byte-for-byte round-trip verified.');
+} catch (err) {
+  console.error(err.message.startsWith('Command failed') ? 'Archive creation failed. Check source paths and Python 3 availability.' : err.message);
+  process.exitCode = 1;
+} finally {
+  if (temp) fs.rmSync(temp, { recursive: true, force: true });
+  if (outputTemp) fs.rmSync(outputTemp, { force: true });
 }
-
-const key = Buffer.from(keyHex, 'hex');
-if (key.length !== 32) {
-    console.error('❌ HATA: Anahtar 32 byte (64 hex karakter) olmalıdır!');
-    process.exit(1);
-}
-
-// Dosyaları Özyinelemeli Toplama
-function getAllFiles(dir, fileList = []) {
-    if (!fs.existsSync(dir)) return fileList;
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-        const filePath = path.join(dir, file);
-        if (fs.statSync(filePath).isDirectory()) {
-            getAllFiles(filePath, fileList);
-        } else {
-            fileList.push(filePath);
-        }
-    }
-    return fileList;
-}
-
-const srcFiles = getAllFiles(path.join(__dirname, 'src'));
-const allFilesToEncrypt = [...srcFiles];
-
-if (fs.existsSync(path.join(__dirname, 'runner.js'))) {
-    allFilesToEncrypt.push(path.join(__dirname, 'runner.js'));
-}
-
-if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
-    allFilesToEncrypt.push(path.join(__dirname, 'cookies.txt'));
-}
-
-console.log(`📦 Toplam ${allFilesToEncrypt.length} dosya şifreleniyor...`);
-
-const archive = {};
-for (const fullPath of allFilesToEncrypt) {
-    const relPath = path.relative(__dirname, fullPath).replace(/\\/g, '/');
-    archive[relPath] = fs.readFileSync(fullPath).toString('base64');
-}
-
-const plainBuffer = Buffer.from(JSON.stringify(archive), 'utf8');
-
-// AES-256-GCM Şifreleme
-const iv = crypto.randomBytes(12); // 96-bit nonce
-const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-
-const encrypted = Buffer.concat([cipher.update(plainBuffer), cipher.final()]);
-const authTag = cipher.getAuthTag(); // 128-bit authentication tag
-
-// Format: [12-byte IV][16-byte AuthTag][EncryptedData]
-const finalBundle = Buffer.concat([iv, authTag, encrypted]);
-
-fs.writeFileSync(path.join(__dirname, 'bundle.enc'), finalBundle);
-
-console.log('✅ ŞİFRELEME BAŞARILI!');
-console.log(`📁 Oluşturulan dosya: bundle.enc (${(finalBundle.length / 1024).toFixed(2)} KB)`);
-console.log('------------------------------------------------------');
-console.log('🔑 ŞİFRE ÇÖZÜCÜ ANAHTARIN (DECRYPTION_KEY):');
-console.log(keyHex);
-console.log('------------------------------------------------------');
