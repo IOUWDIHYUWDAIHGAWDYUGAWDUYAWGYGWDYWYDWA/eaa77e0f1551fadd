@@ -1,164 +1,89 @@
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-const { execSync } = require('child_process');
-
-const keyHex = process.argv[2];
-if (!keyHex) {
-  console.error('KULLANIM: node decrypt.js <HEX_KEY>');
-  process.exit(1);
-}
-
-const key = Buffer.from(keyHex, 'hex');
-if (key.length !== 32) {
-  console.error('HATA: Anahtar 32 byte olmali.');
-  process.exit(1);
-}
-
-const enc = fs.readFileSync('bundle.enc');
-const iv = enc.slice(0, 16);
-const ciphertext = enc.slice(16);
-const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-const zip = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-fs.writeFileSync('bundle.zip', zip);
-console.log('Decrypt tamam: ' + zip.length + ' byte');
-
-const tmpDir = '/tmp/vybot_' + Date.now();
-fs.mkdirSync(tmpDir, { recursive: true });
-
-const pyScript = path.join(tmpDir, 'extract.py');
-const pyLines = [
-  'import zipfile, sys, os',
-  'dest = sys.argv[2]',
-  'bs = chr(92)',
-  'def ensure_parent(target):',
-  '    parent = os.path.dirname(target)',
-  '    chain = []',
-  '    cur = parent',
-  '    while cur and os.path.abspath(cur).startswith(os.path.abspath(dest)):',
-  '        chain.append(cur)',
-  '        nxt = os.path.dirname(cur)',
-  '        if nxt == cur: break',
-  '        cur = nxt',
-  '    for p in reversed(chain):',
-  '        if os.path.isfile(p): os.remove(p)',
-  '        if not os.path.isdir(p): os.makedirs(p, exist_ok=True)',
-  'with zipfile.ZipFile(sys.argv[1], "r") as z:',
-  '    for info in z.infolist():',
-  '        name = info.filename.replace(bs, "/")',
-  '        parts = [p for p in name.split("/") if p and p not in (".", "..")]',
-  '        if not parts: continue',
-  '        target = os.path.join(dest, *parts)',
-  '        is_dir = info.is_dir() or name.endswith("/")',
-  '        if is_dir:',
-  '            if os.path.isfile(target): os.remove(target)',
-  '            os.makedirs(target, exist_ok=True)',
-  '            continue',
-  '        ensure_parent(target)',
-  '        if os.path.isdir(target): continue',
-  '        with z.open(info) as src, open(target, "wb") as out:',
-  '            out.write(src.read())',
-  '    print("Cikarildi: %d girdi" % len(z.namelist()))',
-];
-fs.writeFileSync(pyScript, pyLines.join('\n'), 'utf8');
-execSync(`python3 "${pyScript}" bundle.zip "${tmpDir}"`, { encoding: 'utf8', stdio: 'inherit' });
-
-function hasBotEntry(dir) {
-  return fs.existsSync(path.join(dir, 'index.js')) || fs.existsSync(path.join(dir, 'deploy-commands.js'));
-}
-
-const srcDir = path.join(__dirname, 'src');
-if (fs.existsSync(srcDir)) fs.rmSync(srcDir, { recursive: true });
-fs.mkdirSync(srcDir, { recursive: true });
-
-const extractedSrc = path.join(tmpDir, 'src');
-let copiedFrom = '';
-if (hasBotEntry(extractedSrc)) {
-  fs.cpSync(extractedSrc, srcDir, { recursive: true });
-  copiedFrom = 'tmp/src';
-} else if (hasBotEntry(tmpDir)) {
-  for (const f of fs.readdirSync(tmpDir)) {
-    if (f === 'extract.py') continue;
-    fs.cpSync(path.join(tmpDir, f), path.join(srcDir, f), { recursive: true });
-  }
-  copiedFrom = 'tmp kok';
-} else {
-  console.error('HATA: ZIP icinde src/index.js veya deploy-commands.js bulunamadi.');
-  console.error('tmp icerik: ' + fs.readdirSync(tmpDir).join(', '));
-  process.exit(1);
-}
-
-function listFiles(dir, prefix) {
-  const out = [];
-  for (const name of fs.readdirSync(dir)) {
-    const full = path.join(dir, name);
-    const rel = prefix ? prefix + '/' + name : name;
-    if (fs.statSync(full).isDirectory()) out.push(...listFiles(full, rel));
-    else out.push(rel);
-  }
-  return out;
-}
-
-const srcFiles = listFiles(srcDir, '');
-console.log('src/ kaynagi: ' + copiedFrom);
-console.log('src/ dosyalari: ' + srcFiles.join(', '));
-
-const deployPath = path.join(srcDir, 'deploy-commands.js');
-const indexPath = path.join(srcDir, 'index.js');
-if (!fs.existsSync(deployPath) || !fs.existsSync(indexPath)) {
-  console.error('HATA: Beklenen dosyalar yok.');
-  console.error('deploy-commands.js:', fs.existsSync(deployPath));
-  console.error('index.js:', fs.existsSync(indexPath));
-  process.exit(1);
-}
-
-const configPath = path.join(srcDir, 'config.js');
-if (fs.existsSync(configPath)) {
-  let current = fs.readFileSync(configPath, 'utf8');
-  let patches = 0;
-  const maxPatches = 30;
-  while (patches <= maxPatches) {
-    try {
-      new vm.Script(current, { filename: 'config.js' });
-      if (patches > 0) {
-        fs.writeFileSync(configPath, current);
-        console.log('config.js duzeltildi (' + patches + ' virgul).');
-      }
-      break;
-    } catch (err) {
-      if (patches === maxPatches) {
-        console.error('config.js yama basarisiz:', err.message);
-        process.exit(1);
-      }
-      const lineMatch = /config\.js:(\d+)/.exec(String(err.stack));
-      const errorLine = lineMatch ? Number(lineMatch[1]) : 0;
-      if (!errorLine) {
-        console.error('config.js yama basarisiz:', err.message);
-        process.exit(1);
-      }
-      console.log('config.js syntax: ' + err.message + ' (satir ' + errorLine + ')');
-      const nl = current.includes('\r\n') ? '\r\n' : '\n';
-      const lines = current.split(/\r?\n/);
-      let changed = false;
-      for (let i = errorLine - 2; i >= 0; i--) {
-        const t = lines[i].trim();
-        if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) continue;
-        if (t.endsWith(',')) break;
-        lines[i] = lines[i].replace(/\s+$/, '') + ',';
-        changed = true;
+'use strict';
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
+const { readKey, decrypt } = require('./scripts/bundle-crypto');
+let temp;
+let staging;
+try {
+  const key = readKey();
+  const plain = decrypt(fs.readFileSync(path.join(__dirname, 'bundle.enc')), key);
+  temp = fs.mkdtempSync(path.join(os.tmpdir(), 'vybot-open-'));
+  const zipPath = path.join(temp, 'source.zip');
+  fs.writeFileSync(zipPath, plain, { mode: 0o600 });
+  const extracted = path.join(temp, 'files');
+  const script = `import pathlib, stat, sys, zipfile
+root = pathlib.Path(sys.argv[2]); root.mkdir(mode=0o700)
+with zipfile.ZipFile(sys.argv[1]) as z:
+    infos = z.infolist()
+    if len(infos) > 20000 or sum(i.file_size for i in infos) > 100_000_000:
+        raise ValueError('Archive exceeds limits')
+    seen = set()
+    for i in infos:
+        name = i.filename.replace(chr(92), '/')
+        p = pathlib.PurePosixPath(name)
+        if p.is_absolute() or '..' in p.parts or any(':' in x for x in p.parts) or stat.S_ISLNK(i.external_attr >> 16):
+            raise ValueError('Unsafe archive entry')
+        if not p.parts: continue
+        canonical = p.as_posix()
+        if canonical in seen: raise ValueError('Duplicate archive entry')
+        seen.add(canonical)
+        target = root.joinpath(*p.parts)
+        if i.is_dir() or name.endswith('/'):
+            target.mkdir(parents=True, exist_ok=True, mode=0o700)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            target.write_bytes(z.read(i)); target.chmod(0o600)
+`;
+  execFileSync('python3', ['-c', script, zipPath, extracted], { stdio: 'pipe' });
+  const hasEntry = dir => fs.existsSync(path.join(dir, 'index.js')) && fs.existsSync(path.join(dir, 'deploy-commands.js'));
+  const source = hasEntry(path.join(extracted, 'src')) ? path.join(extracted, 'src') : extracted;
+  if (!hasEntry(source)) throw new Error('Archive must contain index.js and deploy-commands.js under src/ or its root.');
+  const configPath = path.join(source, 'config.js');
+  if (fs.existsSync(configPath)) {
+    // Preserve the deployed decoder's missing-comma repair, without executing source code.
+    let current = fs.readFileSync(configPath, 'utf8');
+    for (let attempt = 0; ; attempt++) {
+      try {
+        new vm.Script(current, { filename: 'config.js' });
+        if (attempt) fs.writeFileSync(configPath, current, { mode: 0o600 });
         break;
+      } catch (err) {
+        if (attempt >= 30) throw new Error('config.js syntax validation failed; existing src was not replaced.');
+        const match = /config\.js:(\d+)/.exec(String(err.stack));
+        if (!match) throw new Error('config.js syntax validation failed.');
+        const lines = current.split(/\r?\n/);
+        let changed = false;
+        for (let i = Number(match[1]) - 2; i >= 0; i--) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('//') || line.startsWith('*') || line.startsWith('/*')) continue;
+          if (line.endsWith(',')) break;
+          lines[i] = lines[i].replace(/\s+$/, '') + ',';
+          changed = true;
+          break;
+        }
+        if (!changed) throw new Error('config.js syntax validation failed; existing src was not replaced.');
+        current = lines.join(current.includes('\r\n') ? '\r\n' : '\n');
       }
-      if (!changed) {
-        console.error('config.js yama basarisiz:', err.message);
-        process.exit(1);
-      }
-      current = lines.join(nl);
-      patches += 1;
     }
   }
+  // Stage on the same filesystem, then replace only after validation succeeds.
+  staging = fs.mkdtempSync(path.join(__dirname, '.bundle-stage-'));
+  const next = path.join(staging, 'src');
+  const backup = path.join(staging, 'previous-src');
+  const destination = path.join(__dirname, 'src');
+  fs.cpSync(source, next, { recursive: true });
+  const hadPrevious = fs.existsSync(destination);
+  if (hadPrevious) fs.renameSync(destination, backup);
+  try { fs.renameSync(next, destination); }
+  catch (err) { if (hadPrevious) fs.renameSync(backup, destination); throw err; }
+  console.log('Source decrypted and validated. No secret values were logged.');
+} catch (err) {
+  console.error(err.message.startsWith('Command failed') ? 'Archive validation failed. Existing source was not replaced.' : err.message);
+  process.exitCode = 1;
+} finally {
+  if (temp) fs.rmSync(temp, { recursive: true, force: true });
+  if (staging) fs.rmSync(staging, { recursive: true, force: true });
 }
-
-fs.rmSync(tmpDir, { recursive: true });
-fs.unlinkSync('bundle.zip');
-console.log('Bot kaynak kodu hazir.');
