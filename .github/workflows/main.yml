@@ -78,24 +78,50 @@ jobs:
           cat /tmp/deploy-commands.log
           failure_class=success
           if [ "$status" -ne 0 ]; then
-            if grep -q 'Missing Access' /tmp/deploy-commands.log; then
-              failure_class=missing_access
-            elif grep -q 'Cannot find module' /tmp/deploy-commands.log; then
-              failure_class=missing_module
-            elif grep -q 'Bot token bulunamadı' /tmp/deploy-commands.log; then
-              failure_class=missing_token
-            else
-              failure_class=deploy_failed
+            if grep -q 'Missing Access' /tmp/deploy-commands.log; then failure_class=missing_access
+            elif grep -q 'Cannot find module' /tmp/deploy-commands.log; then failure_class=missing_module
+            elif grep -q 'Bot token bulunamadı' /tmp/deploy-commands.log; then failure_class=missing_token
+            else failure_class=deploy_failed
             fi
           fi
           echo "failure_class=$failure_class" >> "$GITHUB_OUTPUT"
           exit "$status"
+      - name: 🧪 Tam bot ön çalıştırması
+        id: runtime
+        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success'
+        continue-on-error: true
+        env:
+          TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          GUILD_ID: '1536835757132751048'
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          set +e
+          env -u VYBOT_API_PORT timeout 45 node --require ./bridge/cloudflare-management.cjs src/index.js > /tmp/bot-runtime.log 2>&1
+          status=$?
+          cat /tmp/bot-runtime.log
+          runtime_class=running
+          final_status=0
+          if [ "$status" -ne 124 ]; then
+            final_status=1
+            if grep -q 'Cannot find module' /tmp/bot-runtime.log; then runtime_class=missing_module
+            elif grep -Eqi 'disallowed intents|code.?4014' /tmp/bot-runtime.log; then runtime_class=disallowed_intents
+            elif grep -Eqi 'invalid token|TokenInvalid' /tmp/bot-runtime.log; then runtime_class=invalid_token
+            elif grep -Eqi 'Missing Access|code.?50001' /tmp/bot-runtime.log; then runtime_class=missing_access
+            else runtime_class=unexpected_exit
+            fi
+          fi
+          echo "runtime_class=$runtime_class" >> "$GITHUB_OUTPUT"
+          exit "$final_status"
       - name: 🩺 Başlangıç aşamasını güvenle kaydet
         if: always()
         env:
           DECRYPT_OUTCOME: ${{ steps.decrypt.outcome }}
           DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
-          FAILURE_CLASS: ${{ steps.deploy.outputs.failure_class }}
+          DEPLOY_CLASS: ${{ steps.deploy.outputs.failure_class }}
+          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+          RUNTIME_CLASS: ${{ steps.runtime.outputs.runtime_class }}
         run: |
           python3 - <<'PY'
           import json, os, time
@@ -103,7 +129,9 @@ jobs:
             'workflowCommit': os.environ.get('GITHUB_SHA', ''),
             'decrypt': os.environ.get('DECRYPT_OUTCOME', 'unknown'),
             'deployCommands': os.environ.get('DEPLOY_OUTCOME', 'unknown'),
-            'failureClass': os.environ.get('FAILURE_CLASS') or 'none',
+            'deployClass': os.environ.get('DEPLOY_CLASS') or 'none',
+            'runtime': os.environ.get('RUNTIME_OUTCOME', 'unknown'),
+            'runtimeClass': os.environ.get('RUNTIME_CLASS') or 'none',
             'targetGuild': '1536835757132751048',
             'recordedAt': int(time.time())
           }
@@ -114,10 +142,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .runtime-status.json
-          git commit -m '[skip ci] Record encrypted bot startup stage' || exit 0
+          git commit -m '[skip ci] Record full bot runtime stage' || exit 0
           git push origin HEAD:main
       - name: 🤖 Tam bot ve güvenli panel bağlantısı
-        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success'
+        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
         env:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
@@ -133,10 +161,9 @@ jobs:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
-          echo "Şifreli paket açılamadı; kaynak yayınlanmadan panel yönetim modu başlatılıyor."
           timeout 17700 node bridge/management-only.cjs || true
       - name: 🔄 Sıradaki döngüyü başlat
-        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success'
+        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run main.yml || true
