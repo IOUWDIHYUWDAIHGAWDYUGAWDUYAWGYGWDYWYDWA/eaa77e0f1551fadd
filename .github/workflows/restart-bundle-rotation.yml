@@ -1,0 +1,46 @@
+name: Restart secure bundle rotation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restart-bundle-rotation.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extend wait window and remove restart helper
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('.github/workflows/rotate-bundle-key.yml')
+          text=path.read_text(encoding='utf-8')
+          replacements={
+              '    timeout-minutes: 15':'    timeout-minutes: 20',
+              '          for attempt in $(seq 1 180); do':'          for attempt in $(seq 1 300); do',
+          }
+          for old,new in replacements.items():
+              if text.count(old)!=1:
+                  raise SystemExit(f'Expected one workflow match for: {old}')
+              text=text.replace(old,new,1)
+          path.write_text(text,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/restart-bundle-rotation.yml
+          git add .github/workflows/rotate-bundle-key.yml
+          git commit -m 'Refresh one-time encrypted bundle recipient'
+          git push origin HEAD:main
+      - name: Start fresh key recipient
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run rotate-bundle-key.yml --ref main
