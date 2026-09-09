@@ -1,8 +1,10 @@
 {
-  "workflowCommit": "c054aec50bac640df715508346d39f8e963ce9d7",
+  "workflowCommit": "c3cb7c4967dae36fe6c0d5d52e260a78dc160b3f",
   "decrypt": "success",
   "deployCommands": "success",
-  "failureClass": "success",
+  "deployClass": "success",
+  "runtime": "failure",
+  "runtimeClass": "missing_module",
   "targetGuild": "1536835757132751048",
-  "recordedAt": 1788983943
+  "recordedAt": 1788984034
 }
