@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'yeniwebsite/**'
+      - 'dashboard/**'
+      - 'assets/css/dashboard-v2.css'
+      - 'assets/js/dashboard-v2.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -30,10 +33,19 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Build Pages artifact
+        run: |
+          rm -rf site
+          cp -a yeniwebsite site
+          mkdir -p site/dashboard site/assets/css site/assets/js
+          cp dashboard/index.html site/dashboard/index.html
+          cp assets/css/dashboard-v2.css site/assets/css/dashboard-v2.css
+          cp assets/js/dashboard-v2.js site/assets/js/dashboard-v2.js
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: yeniwebsite
+          path: site
 
       - name: Deploy to GitHub Pages
         id: deployment
