@@ -61,6 +61,7 @@ jobs:
       - name: 🚀 Tam bot komutlarını güncelle
         if: steps.decrypt.outcome == 'success'
         env:
+          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -68,6 +69,7 @@ jobs:
       - name: 🤖 Tam bot ve güvenli panel bağlantısı
         if: steps.decrypt.outcome == 'success'
         env:
+          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -77,6 +79,7 @@ jobs:
       - name: 🛟 Güvenli panel yönetim modu
         if: steps.decrypt.outcome == 'failure'
         env:
+          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
           echo "Şifreli paket açılamadı; kaynak yayınlanmadan panel yönetim modu başlatılıyor."
