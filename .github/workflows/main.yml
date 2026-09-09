@@ -23,11 +23,13 @@ jobs:
     steps:
       - name: 📥 Kodu Çek
         uses: actions/checkout@v4
+
       - name: 🟢 Node.js 22 Kur
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: ⚡ Bağımlılık önbelleği
         id: cache-tools
         uses: actions/cache@v4
@@ -36,16 +38,19 @@ jobs:
             node_modules
             /usr/local/bin/yt-dlp
           key: tools-v3-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: 🎵 yt-dlp Kur
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
           sudo curl -L -s https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
+
       - name: 📦 Bağımlılıkları yükle ve doğrula
         run: |
           npm ci --prefer-offline --no-audit --no-fund
           npm install --no-save --no-audit --no-fund sql.js@1.13.0 node-cron@3.0.3
-          node -e "require.resolve('sql.js'); require.resolve('node-cron'); console.log('Ek bağımlılıklar hazır')"
+          node -e "require.resolve('sql.js'); require.resolve('node-cron'); console.log('Bot bağımlılıkları hazır')"
+
       - name: 🔓 Şifreli kodları çöz
         id: decrypt
         continue-on-error: true
@@ -60,114 +65,38 @@ jobs:
           unset DECRYPTION_KEY
           test -f src/deploy-commands.js
           test -f src/index.js
-      - name: 🚀 Tam bot komutlarını güncelle
-        id: deploy
+
+      - name: 🚀 29 slash komutunu güncelle
         if: steps.decrypt.outcome == 'success'
-        continue-on-error: true
         env:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GUILD_ID: '1536835757132751048'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: |
-          set +e
-          node src/deploy-commands.js > /tmp/deploy-commands.log 2>&1
-          status=$?
-          cat /tmp/deploy-commands.log
-          failure_class=success
-          if [ "$status" -ne 0 ]; then
-            if grep -q 'Missing Access' /tmp/deploy-commands.log; then failure_class=missing_access
-            elif grep -q 'Cannot find module' /tmp/deploy-commands.log; then failure_class=missing_module
-            elif grep -q 'Bot token bulunamadı' /tmp/deploy-commands.log; then failure_class=missing_token
-            else failure_class=deploy_failed
-            fi
-          fi
-          echo "failure_class=$failure_class" >> "$GITHUB_OUTPUT"
-          exit "$status"
-      - name: 🧪 Tam bot ön çalıştırması
-        id: runtime
-        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success'
-        continue-on-error: true
-        env:
-          TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          GUILD_ID: '1536835757132751048'
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: |
-          set +e
-          env -u VYBOT_API_PORT timeout 45 node --require ./bridge/cloudflare-management.cjs src/index.js > /tmp/bot-runtime.log 2>&1
-          status=$?
-          cat /tmp/bot-runtime.log
-          runtime_class=running
-          missing_module=none
-          final_status=0
-          if [ "$status" -ne 124 ]; then
-            final_status=1
-            if grep -q 'Cannot find module' /tmp/bot-runtime.log; then
-              runtime_class=missing_module
-              raw_module=$(sed -n "s/^Error: Cannot find module '\([^']*\)'.*/\1/p" /tmp/bot-runtime.log | head -n 1)
-              missing_module=$(printf '%s' "$raw_module" | tr -cd 'A-Za-z0-9@._/-' | head -c 120)
-              [ -n "$missing_module" ] || missing_module=unknown
-            elif grep -Eqi 'disallowed intents|code.?4014' /tmp/bot-runtime.log; then runtime_class=disallowed_intents
-            elif grep -Eqi 'invalid token|TokenInvalid' /tmp/bot-runtime.log; then runtime_class=invalid_token
-            elif grep -Eqi 'Missing Access|code.?50001' /tmp/bot-runtime.log; then runtime_class=missing_access
-            else runtime_class=unexpected_exit
-            fi
-          fi
-          echo "runtime_class=$runtime_class" >> "$GITHUB_OUTPUT"
-          echo "missing_module=$missing_module" >> "$GITHUB_OUTPUT"
-          exit "$final_status"
-      - name: 🩺 Başlangıç aşamasını güvenle kaydet
-        if: always()
-        env:
-          DECRYPT_OUTCOME: ${{ steps.decrypt.outcome }}
-          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
-          DEPLOY_CLASS: ${{ steps.deploy.outputs.failure_class }}
-          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
-          RUNTIME_CLASS: ${{ steps.runtime.outputs.runtime_class }}
-          MISSING_MODULE: ${{ steps.runtime.outputs.missing_module }}
-        run: |
-          python3 - <<'PY'
-          import json, os, time
-          status = {
-            'workflowCommit': os.environ.get('GITHUB_SHA', ''),
-            'decrypt': os.environ.get('DECRYPT_OUTCOME', 'unknown'),
-            'deployCommands': os.environ.get('DEPLOY_OUTCOME', 'unknown'),
-            'deployClass': os.environ.get('DEPLOY_CLASS') or 'none',
-            'runtime': os.environ.get('RUNTIME_OUTCOME', 'unknown'),
-            'runtimeClass': os.environ.get('RUNTIME_CLASS') or 'none',
-            'missingModule': os.environ.get('MISSING_MODULE') or 'none',
-            'targetGuild': '1536835757132751048',
-            'recordedAt': int(time.time())
-          }
-          with open('.runtime-status.json', 'w', encoding='utf-8') as f:
-            json.dump(status, f, ensure_ascii=False, indent=2)
-            f.write('\n')
-          PY
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .runtime-status.json
-          git commit -m '[skip ci] Record dependency-corrected bot runtime' || exit 0
-          git push origin HEAD:main
+        run: node src/deploy-commands.js
+
       - name: 🤖 Tam bot ve güvenli panel bağlantısı
-        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
+        if: steps.decrypt.outcome == 'success'
         env:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GUILD_ID: '1536835757132751048'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
+        run: |
+          echo "Tam bot ve güvenli panel bağlantısı başlatılıyor."
+          env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
+
       - name: 🛟 Güvenli panel yönetim modu
         if: steps.decrypt.outcome == 'failure'
         env:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: timeout 17700 node bridge/management-only.cjs || true
+
       - name: 🔄 Sıradaki döngüyü başlat
-        if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
+        if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run main.yml || true
