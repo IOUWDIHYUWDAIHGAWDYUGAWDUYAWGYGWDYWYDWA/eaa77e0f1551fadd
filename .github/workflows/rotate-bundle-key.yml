@@ -1,5 +1,5 @@
 name: Rotate encrypted bot bundle
-# Rotation attempt 3 — refresh main and replace stale transfer state
+# Rotation attempt 4 — reconstruct the verified transfer and publish a matching key
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create one-time transfer recipient
+      - name: Verify encrypted transfer and create one-time recipient
         run: |
           set -euo pipefail
           umask 077
@@ -34,39 +34,58 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch origin main
           git checkout -B main origin/main
+
+          test -d .bundle-transfer
+          test "$(find .bundle-transfer -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 27
+          : > /tmp/bundle.enc.b64
+          for i in $(seq 0 26); do
+            printf -v chunk '%03d' "$i"
+            file=".bundle-transfer/chunk-$chunk"
+            test -f "$file"
+            cat "$file" >> /tmp/bundle.enc.b64
+          done
+          test "$(wc -c < /tmp/bundle.enc.b64)" -eq 203102
+          test "$(sha256sum /tmp/bundle.enc.b64 | cut -d' ' -f1)" = 'f0b691dc70d23c18d57461b89b4e57bd42fdc7a446b6a59d530a0d148512ed1a'
+          base64 -d /tmp/bundle.enc.b64 > /tmp/new-bundle.enc
+          test "$(wc -c < /tmp/new-bundle.enc)" -eq 150347
+          test "$(sha256sum /tmp/new-bundle.enc | cut -d' ' -f1)" = '25a960bf3aaf624df91f5c3de330fe66a7af3bc8b1245774862db240ddc24959'
+          test "$(head -c 8 /tmp/new-bundle.enc)" = 'VYBOTENC'
+
           rm -rf .bundle-rotation
           mkdir -p .bundle-rotation
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /tmp/vybot-rotation-private.pem 2>/dev/null
           openssl pkey -in /tmp/vybot-rotation-private.pem -pubout -out .bundle-rotation/public.pem
           git add -A .bundle-rotation
-          git commit -m 'Stage fresh one-time encrypted bundle recipient'
+          git commit -m 'Stage verified one-time encrypted bundle recipient'
           git push origin main
-          echo 'One-time public recipient is ready.'
+          echo 'Verified transfer and one-time public recipient are ready.'
 
-      - name: Wait for encrypted bundle and sealed key
+      - name: Wait for the matching sealed key
         run: |
           set -euo pipefail
           found=0
           for attempt in $(seq 1 300); do
             git fetch -q origin main
-            if git cat-file -e origin/main:.bundle-rotation/bundle.enc.b64 2>/dev/null && \
+            if git cat-file -e origin/main:.bundle-rotation/public.pem 2>/dev/null && \
                git cat-file -e origin/main:.bundle-rotation/key.rsa.b64 2>/dev/null; then
-              git show origin/main:.bundle-rotation/bundle.enc.b64 > /tmp/bundle.enc.b64
-              git show origin/main:.bundle-rotation/key.rsa.b64 > /tmp/key.rsa.b64
-              found=1
-              break
+              git show origin/main:.bundle-rotation/public.pem > /tmp/current-public.pem
+              if cmp -s .bundle-rotation/public.pem /tmp/current-public.pem; then
+                git show origin/main:.bundle-rotation/key.rsa.b64 > /tmp/key.rsa.b64
+                found=1
+                break
+              fi
             fi
             sleep 2
           done
           test "$found" -eq 1
           git reset --hard origin/main
 
-      - name: Import and validate encrypted package
+      - name: Open key and validate encrypted package
         run: |
           set -euo pipefail
           umask 077
-          base64 --decode /tmp/bundle.enc.b64 > /tmp/new-bundle.enc
-          base64 --decode /tmp/key.rsa.b64 > /tmp/new-key.rsa
+          base64 -d /tmp/key.rsa.b64 > /tmp/new-key.rsa
+          test "$(wc -c < /tmp/new-key.rsa)" -eq 384
           openssl pkeyutl -decrypt \
             -inkey /tmp/vybot-rotation-private.pem \
             -in /tmp/new-key.rsa \
@@ -84,6 +103,7 @@ jobs:
           const opened = decrypt(fs.readFileSync('bundle.enc'), key);
           fs.writeFileSync('/tmp/verified-source.zip', opened, { mode: 0o600 });
           NODE
+          test "$(wc -c < /tmp/verified-source.zip)" -eq 150310
           python3 - <<'PY'
           import pathlib, shutil, stat, zipfile
           archive = pathlib.Path('/tmp/verified-source.zip')
@@ -92,8 +112,8 @@ jobs:
           target.mkdir(mode=0o700)
           with zipfile.ZipFile(archive) as z:
               infos = z.infolist()
-              if len(infos) > 20000 or sum(i.file_size for i in infos) > 100_000_000:
-                  raise SystemExit('Archive exceeds limits')
+              if len(infos) != 51 or sum(i.file_size for i in infos) != 413_509:
+                  raise SystemExit('Archive inventory does not match the verified source')
               seen = set()
               for info in infos:
                   name = info.filename.replace(chr(92), '/')
@@ -225,12 +245,16 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -rf .bundle-rotation
+          git rm -r .bundle-transfer
           git rm .github/workflows/rotate-bundle-key.yml
-          git add -A bundle.enc bundle.key.enc scripts/unwrap-bundle-key.js .github/workflows/main.yml .bundle-rotation
+          git rm -f .github/workflows/restart-bundle-rotation.yml 2>/dev/null || true
+          git add -A
           if git ls-files 'src/*' | grep -q .; then
             echo 'Plain source must never be committed.' >&2
             exit 1
           fi
+          test ! -e .bundle-rotation
+          test ! -e .bundle-transfer
           git commit -m 'Rotate encrypted full bot bundle key'
           git push origin HEAD:main
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -243,5 +267,5 @@ jobs:
       - name: Remove transient key material
         if: always()
         run: |
-          rm -f /tmp/vybot-rotation-private.pem /tmp/new-bundle-key.bin /tmp/new-key.rsa /tmp/new-bundle.enc /tmp/verified-source.zip
+          rm -f /tmp/vybot-rotation-private.pem /tmp/current-public.pem /tmp/new-bundle-key.bin /tmp/new-key.rsa /tmp/key.rsa.b64 /tmp/bundle.enc.b64 /tmp/new-bundle.enc /tmp/verified-source.zip
           rm -rf /tmp/verified-source
