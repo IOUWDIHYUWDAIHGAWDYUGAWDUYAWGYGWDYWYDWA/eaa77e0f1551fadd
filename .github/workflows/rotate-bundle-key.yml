@@ -1,5 +1,5 @@
 name: Rotate encrypted bot bundle
-# Rotation attempt 5 — publish production artifacts before separate cleanup
+# Rotation attempt 6 — extended handoff window for immediate production publish
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   rotate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           found=0
-          for attempt in $(seq 1 300); do
+          for attempt in $(seq 1 900); do
             git fetch -q origin main
             if git cat-file -e origin/main:.bundle-rotation/public.pem 2>/dev/null && \
                git cat-file -e origin/main:.bundle-rotation/key.rsa.b64 2>/dev/null; then
