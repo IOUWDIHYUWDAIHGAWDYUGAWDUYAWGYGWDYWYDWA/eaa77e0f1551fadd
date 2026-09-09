@@ -54,6 +54,8 @@ jobs:
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: npm ci --prefer-offline --no-audit --no-fund
       - name: 🔓 Şifreli kodları çöz
+        id: decrypt
+        continue-on-error: true
         env:
           DECRYPTION_KEY: ${{ secrets.DECRYPTION_KEY }}
         run: |
@@ -62,20 +64,29 @@ jobs:
           test -f src/deploy-commands.js
           test -f src/index.js
           node --check bridge/cloudflare-management.cjs
-      - name: 🚀 Komutları güncelle
+      - name: 🚀 Tam bot komutlarını güncelle
+        if: steps.decrypt.outcome == 'success'
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node src/deploy-commands.js
-      - name: 🤖 Bot ve güvenli panel bağlantısı
+      - name: 🤖 Tam bot ve güvenli panel bağlantısı
+        if: steps.decrypt.outcome == 'success'
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          echo "Bot, Cloudflare paneline kısa ömürlü Actions kimliğiyle bağlanıyor."
+          echo "Tam bot, Cloudflare paneline kısa ömürlü Actions kimliğiyle bağlanıyor."
           env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
+      - name: 🛟 Güvenli panel yönetim modu
+        if: steps.decrypt.outcome == 'failure'
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          echo "Şifreli paket açılamadı; kaynak yayınlanmadan panel yönetim modu başlatılıyor."
+          timeout 17700 node bridge/management-only.cjs || true
       - name: 🔄 Sıradaki döngüyü başlat
         if: success()
         env:
