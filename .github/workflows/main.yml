@@ -67,6 +67,7 @@ jobs:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          GUILD_ID: '1536835757132751048'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node src/deploy-commands.js
       - name: 🤖 Tam bot ve güvenli panel bağlantısı
@@ -75,6 +76,7 @@ jobs:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          GUILD_ID: '1536835757132751048'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           echo "Tam bot, Cloudflare paneline kısa ömürlü Actions kimliğiyle bağlanıyor."
