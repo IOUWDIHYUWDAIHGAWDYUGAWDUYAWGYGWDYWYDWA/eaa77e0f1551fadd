@@ -1,0 +1,100 @@
+name: Publish resilient dashboard loader
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-dashboard-resilience.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  publish-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply tested fail-safe patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('assets/js/dashboard-v2.js')
+          source = path.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              source = source.replace(old, new, 1)
+
+          replace_once(
+              "const state={user:null,csrf:'',guilds:[],guild:null,data:null,settings:null,view:'overview',poll:null,loading:false};",
+              "const state={user:null,csrf:'',guilds:[],guild:null,data:null,settings:null,settingsReady:false,view:'overview',poll:null,loading:false};",
+              'state'
+          )
+          replace_once(
+              "function settingsForm(kind){const s=state.settings||defaults();",
+              "function settingsForm(kind){if(!state.settingsReady){const title=kind==='moderation'?'Moderasyon':'Bot Ayarları';return `${heading(title,'Canlı sunucu verisi hazır; ayar servisi geçici olarak kullanılamıyor','<button class=\"vp-secondary\" data-action=\"refresh\">Yenile</button>')}${empty('Bot ayarları alınamadı','Sunucu verileri gösterilmeye devam ediyor. Birkaç saniye sonra yeniden dene.')}`;}const s=state.settings||defaults();",
+              'settings-safe-state'
+          )
+          replace_once(
+              "state.settings=confirmed.settings;form.dataset.dirty='false';",
+              "state.settings=confirmed.settings;state.settingsReady=true;form.dataset.dirty='false';",
+              'settings-confirmation'
+          )
+          old_loader = r"""async function loadGuild(force=false){if(!state.guild||state.loading)return;state.loading=true;$('#loading').hidden=false;$('#error-banner').hidden=true;try{const [data,settings]=await Promise.all([api(`guilds/${state.guild.id}/data${force?'?refresh=1':''}`),api(`guilds/${state.guild.id}/settings`)]);state.data=data;state.settings=settings.settings||defaults();$('#panel').hidden=false;$('#auth-gate').hidden=true;render();}catch(e){$('#error-banner').textContent=e.message;$('#error-banner').hidden=false;setLive(false,e.message);}finally{state.loading=false;$('#loading').hidden=true;}}
+          async function selectGuild(id){state.guild=state.guilds.find(g=>g.id===id)||null;localStorage.setItem('vybot:guild',state.guild?.id||'');if(!state.guild){state.data=null;updateChrome();return;}await loadGuild();clearInterval(state.poll);state.poll=setInterval(()=>loadGuild(),15000);}"""
+          new_loader = r"""async function loadGuild(force=false,withSettings=true){if(!state.guild||state.loading)return;state.loading=true;const panel=$('#panel'),gate=$('#auth-gate'),banner=$('#error-banner');panel.hidden=false;gate.hidden=true;$('#loading').hidden=false;banner.hidden=true;updateChrome();try{const data=await api(`guilds/${state.guild.id}/data${force?'?refresh=1':''}`);state.data=data;let settingsError=null;if(withSettings){try{const settings=await api(`guilds/${state.guild.id}/settings`);state.settings=settings.settings||defaults();state.settingsReady=true;}catch(e){settingsError=e;state.settingsReady=false;if(!state.settings)state.settings=defaults();}}render();if(settingsError){banner.textContent=`Sunucu verileri yüklendi; bot ayarları geçici olarak alınamadı: ${settingsError.message}`;banner.hidden=false;toast('Sunucu verileri hazır; bot ayarları yeniden denenecek.',true);}}catch(e){banner.textContent=e.message;banner.hidden=false;setLive(Boolean(state.data),e.message);if(state.data)render();}finally{state.loading=false;$('#loading').hidden=true;}}
+          async function selectGuild(id){state.guild=state.guilds.find(g=>g.id===id)||null;localStorage.setItem('vybot:guild',state.guild?.id||'');state.data=null;state.settings=null;state.settingsReady=false;clearInterval(state.poll);if(!state.guild){$('#panel').hidden=true;$('#auth-gate').hidden=false;updateChrome();return;}$('#panel').hidden=false;$('#auth-gate').hidden=true;updateChrome();await loadGuild();state.poll=setInterval(()=>loadGuild(false,false),15000);}"""
+          replace_once(old_loader, new_loader, 'guild-loader')
+          if 'Promise.all([api(`guilds/${state.guild.id}/data' in source:
+              raise SystemExit('parallel data/settings loader remains')
+          path.write_text(source, encoding='utf-8')
+          PY
+          node --check assets/js/dashboard-v2.js
+          grep -q 'settingsReady:false' assets/js/dashboard-v2.js
+          grep -q 'setInterval(()=>loadGuild(false,false),15000)' assets/js/dashboard-v2.js
+
+      - name: Commit production source and remove installer
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/js/dashboard-v2.js
+          git rm .github/workflows/fix-dashboard-resilience.yml
+          git commit -m 'Make authenticated dashboard loading resilient'
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy corrected dashboard to Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PATCH_SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          gh workflow run deploy-pages.yml --ref main
+          run_id=''
+          for attempt in $(seq 1 30); do
+            run_id="$(gh run list --workflow deploy-pages.yml --event workflow_dispatch --limit 20 --json databaseId,headSha --jq ".[] | select(.headSha == \"$PATCH_SHA\") | .databaseId" | head -n1)"
+            test -n "$run_id" && break
+            sleep 2
+          done
+          test -n "$run_id"
+          gh run watch "$run_id" --exit-status
+
+      - name: Verify published JavaScript
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsSL 'https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io/eaa77e0f1551fadd/assets/js/dashboard-v2.js' | grep -q 'settingsReady:false'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
