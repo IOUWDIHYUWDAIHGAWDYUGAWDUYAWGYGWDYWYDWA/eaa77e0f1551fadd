@@ -2,12 +2,15 @@ name: vybot 24/7 GitHub Actions Host
 
 on:
   schedule:
-    - cron: '0 */5 * * *' # Her 5 saatte bir otomatik yenilenir
-  workflow_dispatch:      # Manuel başlatma butonu
+    - cron: '0 */5 * * *'
+  workflow_dispatch:
   push:
     branches: [ main ]
 
-permissions: write-all
+permissions:
+  contents: write
+  actions: write
+  id-token: write
 
 concurrency:
   group: vybot-host
@@ -17,18 +20,15 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 350
-
     steps:
-      - name: 📥 Kodu Çek (Checkout)
+      - name: 📥 Kodu Çek
         uses: actions/checkout@v4
-
       - name: 🟢 Node.js 22 Kur
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-
-      - name: 🌐 Cloudflare WARP Kur ve Bağlan (Datacenter IP Engelini Kaldır)
+          cache: npm
+      - name: 🌐 Mevcut WARP bağlantısını hazırla
         run: |
           curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ noble main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
@@ -37,9 +37,7 @@ jobs:
           warp-cli --accept-tos mode warp || true
           warp-cli --accept-tos connect || true
           sleep 3
-          curl -s https://www.cloudflare.com/cdn-cgi/trace | grep warp || true
-
-      - name: ⚡ Bağımlılık & yt-dlp Önbelleği (Cache)
+      - name: ⚡ Bağımlılık önbelleği
         id: cache-tools
         uses: actions/cache@v4
         with:
@@ -47,106 +45,39 @@ jobs:
             node_modules
             /usr/local/bin/yt-dlp
           key: tools-v1-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: 🎵 yt-dlp Kur (Gerekirse)
+      - name: 🎵 yt-dlp Kur
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
           sudo curl -L -s https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
-
-      - name: 📦 Bağımlılıkları Yükle (npm ci)
+      - name: 📦 Bağımlılıkları yükle
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: 🔓 Şifreli Kodları Çöz (Decrypt Bundle)
+      - name: 🔓 Şifreli kodları çöz
         env:
           DECRYPTION_KEY: ${{ secrets.DECRYPTION_KEY }}
         run: |
-          if [ -z "$DECRYPTION_KEY" ]; then
-            echo "❌ HATA: GitHub Secrets içerisine 'DECRYPTION_KEY' eklenmemiş!"
-            exit 1
-          fi
+          test -n "$DECRYPTION_KEY"
           node decrypt.js "$DECRYPTION_KEY"
           test -f src/deploy-commands.js
           test -f src/index.js
-          ls -la src/ | head -n 20
-
-      - name: 🚀 Komutları Discord API'ye Güncelle (Deploy)
+          node --check bridge/cloudflare-management.cjs
+      - name: 🚀 Komutları güncelle
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node src/deploy-commands.js
-
-      - name: 🌐 cloudflared Kur
-        run: |
-          sudo curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
-          sudo chmod a+rx /usr/local/bin/cloudflared
-          cloudflared --version
-
-      - name: 🤖 Botu Çalıştır (5 Saatlik Döngü)
+      - name: 🤖 Bot ve güvenli panel bağlantısı
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          GH_PERSONAL_TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GITHUB_SETTINGS_RAW_URL: https://raw.githubusercontent.com/IOUWDIHYUWDAIHGAWDYUGAWDUYAWGYGWDYWYDWA/eaa77e0f1551fadd/live-data/guild-settings.json
-          VYBOT_API_PORT: '8788'
-          VYBOT_API_TOKEN: ${{ secrets.VYBOT_API_TOKEN }}
-          VYBOT_BRIDGE_PORT: '8787'
-          BOT_API_ORIGIN: http://127.0.0.1:8788
-          VYBOT_CORS_ORIGIN: https://iouwdihyuwdaihgawdyugawduyawgygwdywydwa.github.io
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          echo "========================================================"
-          echo "⚡ vybot başlatılıyor..."
-          echo "⏰ Bu oturum 4 saat 55 dakika boyunca kesintisiz çalışacak."
-          echo "🔄 Süre dolduğunda kendini otomatik yenileyip sıradaki Actions'ı başlatacak."
-          echo "========================================================"
-
-          node bridge/internal-api.js &
-          echo $! > /tmp/vybot-internal-api.pid
-          node bridge/server.js &
-          echo $! > /tmp/vybot-bridge.pid
-
-          if [ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]; then
-            cloudflared tunnel --no-autoupdate run --token "$CLOUDFLARE_TUNNEL_TOKEN" >/tmp/cloudflared.log 2>&1 &
-            echo $! > /tmp/cloudflared.pid
-            echo "Named Cloudflare Tunnel baslatildi."
-          else
-            cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8787 >/tmp/cloudflared.log 2>&1 &
-            echo $! > /tmp/cloudflared.pid
-            TUNNEL_URL=""
-            for i in $(seq 1 45); do
-              TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare.com' /tmp/cloudflared.log | head -n 1 || true)
-              if [ -n "$TUNNEL_URL" ]; then
-                break
-              fi
-              sleep 1
-            done
-            if [ -n "$TUNNEL_URL" ]; then
-              echo "Quick Tunnel hazir."
-              node scripts/publish-tunnel-url.js "$TUNNEL_URL" || echo "tunnel.json yazilamadi (live-data dalini kontrol et)"
-            else
-              echo "Uyari: trycloudflare URL okunamadi. WARP/cloudflared log:"
-              tail -n 40 /tmp/cloudflared.log || true
-            fi
-          fi
-
-          # 4 saat 55 dakika = 17700 saniye sonra temiz sonlanma
-          env -u VYBOT_API_PORT timeout 17700 node src/index.js || true
-
-          if [ -f /tmp/vybot-internal-api.pid ]; then kill "$(cat /tmp/vybot-internal-api.pid)" 2>/dev/null || true; fi
-          if [ -f /tmp/vybot-bridge.pid ]; then kill "$(cat /tmp/vybot-bridge.pid)" 2>/dev/null || true; fi
-          if [ -f /tmp/cloudflared.pid ]; then kill "$(cat /tmp/cloudflared.pid)" 2>/dev/null || true; fi
-          echo "Oturum süresi tamamlandı, yenileniyor..."
-
-      - name: 🔄 Sıradaki 5 Saatlik Döngüyü Başlat (Auto-Relay)
+          echo "Bot, Cloudflare paneline kısa ömürlü Actions kimliğiyle bağlanıyor."
+          env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
+      - name: 🔄 Sıradaki döngüyü başlat
         if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🚀 Yeni 5 saatlik Actions döngüsü tetikleniyor..."
-          gh workflow run main.yml || true
+        run: gh workflow run main.yml || true
