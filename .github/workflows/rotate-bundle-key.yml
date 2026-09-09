@@ -1,0 +1,243 @@
+name: Rotate encrypted bot bundle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rotate-bundle-key.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: vybot-bundle-key-rotation
+  cancel-in-progress: false
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create one-time transfer recipient
+        run: |
+          set -euo pipefail
+          umask 077
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p .bundle-rotation
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /tmp/vybot-rotation-private.pem 2>/dev/null
+          openssl pkey -in /tmp/vybot-rotation-private.pem -pubout -out .bundle-rotation/public.pem
+          git add .bundle-rotation/public.pem
+          git commit -m 'Stage one-time encrypted bundle recipient'
+          git push origin HEAD:main
+          echo 'One-time public recipient is ready.'
+
+      - name: Wait for encrypted bundle and sealed key
+        run: |
+          set -euo pipefail
+          found=0
+          for attempt in $(seq 1 180); do
+            git fetch -q origin main
+            if git cat-file -e origin/main:.bundle-rotation/bundle.enc.b64 2>/dev/null && \
+               git cat-file -e origin/main:.bundle-rotation/key.rsa.b64 2>/dev/null; then
+              git show origin/main:.bundle-rotation/bundle.enc.b64 > /tmp/bundle.enc.b64
+              git show origin/main:.bundle-rotation/key.rsa.b64 > /tmp/key.rsa.b64
+              found=1
+              break
+            fi
+            sleep 2
+          done
+          test "$found" -eq 1
+          git reset --hard origin/main
+
+      - name: Import and validate encrypted package
+        run: |
+          set -euo pipefail
+          umask 077
+          base64 --decode /tmp/bundle.enc.b64 > /tmp/new-bundle.enc
+          base64 --decode /tmp/key.rsa.b64 > /tmp/new-key.rsa
+          openssl pkeyutl -decrypt \
+            -inkey /tmp/vybot-rotation-private.pem \
+            -in /tmp/new-key.rsa \
+            -out /tmp/new-bundle-key.bin \
+            -pkeyopt rsa_padding_mode:oaep \
+            -pkeyopt rsa_oaep_md:sha256 \
+            -pkeyopt rsa_mgf1_md:sha256
+          test "$(wc -c < /tmp/new-bundle-key.bin)" -eq 32
+          test "$(head -c 8 /tmp/new-bundle.enc)" = 'VYBOTENC'
+          install -m 600 /tmp/new-bundle.enc bundle.enc
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { decrypt } = require('./scripts/bundle-crypto');
+          const key = fs.readFileSync('/tmp/new-bundle-key.bin');
+          const opened = decrypt(fs.readFileSync('bundle.enc'), key);
+          fs.writeFileSync('/tmp/verified-source.zip', opened, { mode: 0o600 });
+          NODE
+          python3 - <<'PY'
+          import pathlib, shutil, stat, zipfile
+          archive = pathlib.Path('/tmp/verified-source.zip')
+          target = pathlib.Path('/tmp/verified-source')
+          shutil.rmtree(target, ignore_errors=True)
+          target.mkdir(mode=0o700)
+          with zipfile.ZipFile(archive) as z:
+              infos = z.infolist()
+              if len(infos) > 20000 or sum(i.file_size for i in infos) > 100_000_000:
+                  raise SystemExit('Archive exceeds limits')
+              seen = set()
+              for info in infos:
+                  name = info.filename.replace(chr(92), '/')
+                  pure = pathlib.PurePosixPath(name)
+                  if pure.is_absolute() or '..' in pure.parts or any(':' in part for part in pure.parts):
+                      raise SystemExit('Unsafe archive path')
+                  if stat.S_ISLNK(info.external_attr >> 16) or pure.as_posix() in seen:
+                      raise SystemExit('Unsafe or duplicate archive entry')
+                  seen.add(pure.as_posix())
+                  if not pure.parts or info.is_dir():
+                      continue
+                  output = target.joinpath(*pure.parts)
+                  output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                  output.write_bytes(z.read(info))
+                  output.chmod(0o600)
+              required = {'src/index.js', 'src/deploy-commands.js'}
+              if not required.issubset(seen):
+                  raise SystemExit('Required bot entry files are missing')
+              print(f'Validated encrypted archive with {len(infos)} entries.')
+          PY
+          node --check /tmp/verified-source/src/index.js
+          node --check /tmp/verified-source/src/deploy-commands.js
+
+      - name: Wrap new key and update secure loader
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$DISCORD_TOKEN"
+          mkdir -p scripts
+          node - <<'NODE'
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const root = process.env.DISCORD_TOKEN;
+          const plain = fs.readFileSync('/tmp/new-bundle-key.bin');
+          if (!root || plain.length !== 32) throw new Error('Secure key material is unavailable');
+          const magic = Buffer.from('VYBOTKEY');
+          const header = Buffer.concat([magic, Buffer.from([1])]);
+          const salt = crypto.randomBytes(16);
+          const nonce = crypto.randomBytes(12);
+          const wrappingKey = crypto.scryptSync(root, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+          const cipher = crypto.createCipheriv('aes-256-gcm', wrappingKey, nonce);
+          cipher.setAAD(header);
+          const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
+          const wrapped = Buffer.concat([header, salt, nonce, cipher.getAuthTag(), ciphertext]);
+          fs.writeFileSync('bundle.key.enc', wrapped, { mode: 0o600 });
+          console.log('New bundle key was wrapped without logging key material.');
+          NODE
+          cat > scripts/unwrap-bundle-key.js <<'JS'
+          'use strict';
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          try {
+            const root = process.env.DISCORD_TOKEN;
+            if (!root) throw new Error('missing root secret');
+            const wrapped = fs.readFileSync('bundle.key.enc');
+            const magic = Buffer.from('VYBOTKEY');
+            if (wrapped.length !== 85 || !wrapped.subarray(0, 8).equals(magic) || wrapped[8] !== 1) {
+              throw new Error('invalid wrapped key');
+            }
+            const header = wrapped.subarray(0, 9);
+            const salt = wrapped.subarray(9, 25);
+            const nonce = wrapped.subarray(25, 37);
+            const tag = wrapped.subarray(37, 53);
+            const ciphertext = wrapped.subarray(53);
+            const wrappingKey = crypto.scryptSync(root, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+            const decipher = crypto.createDecipheriv('aes-256-gcm', wrappingKey, nonce);
+            decipher.setAAD(header);
+            decipher.setAuthTag(tag);
+            const key = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+            if (key.length !== 32) throw new Error('invalid key length');
+            process.stdout.write(key.toString('hex'));
+          } catch {
+            console.error('Encrypted bot key could not be opened.');
+            process.exit(1);
+          }
+          JS
+          node --check scripts/unwrap-bundle-key.js
+          node - <<'NODE'
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const { spawnSync } = require('node:child_process');
+          const result = spawnSync(process.execPath, ['scripts/unwrap-bundle-key.js'], { env: process.env, encoding: 'utf8' });
+          if (result.status !== 0 || !/^[a-f0-9]{64}$/.test(result.stdout)) throw new Error('Wrapped key verification failed');
+          const expected = fs.readFileSync('/tmp/new-bundle-key.bin').toString('hex');
+          if (!crypto.timingSafeEqual(Buffer.from(result.stdout), Buffer.from(expected))) throw new Error('Wrapped key mismatch');
+          console.log('Wrapped key round-trip verified.');
+          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/main.yml')
+          text = path.read_text(encoding='utf-8')
+          start_marker = '      - name: 🔓 Şifreli kodları çöz\n'
+          end_marker = '      - name: 🚀 Tam bot komutlarını güncelle\n'
+          if text.count(start_marker) != 1 or text.count(end_marker) != 1:
+              raise SystemExit('Main workflow decryption block was not found uniquely')
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          secret_expression = '$' + '{{ secrets.DISCORD_TOKEN }}'
+          replacement = (
+              '      - name: 🔓 Şifreli kodları çöz\n'
+              '        id: decrypt\n'
+              '        continue-on-error: true\n'
+              '        env:\n'
+              f'          DISCORD_TOKEN: {secret_expression}\n'
+              '        run: |\n'
+              '          test -n "$DISCORD_TOKEN"\n'
+              '          DECRYPTION_KEY="$(node scripts/unwrap-bundle-key.js)"\n'
+              '          test -n "$DECRYPTION_KEY"\n'
+              '          export DECRYPTION_KEY\n'
+              '          node decrypt.js\n'
+              '          unset DECRYPTION_KEY\n'
+              '          test -f src/deploy-commands.js\n'
+              '          test -f src/index.js\n'
+              '          node --check bridge/cloudflare-management.cjs\n'
+          )
+          path.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
+          PY
+          grep -q 'scripts/unwrap-bundle-key.js' .github/workflows/main.yml
+          if grep -q 'secrets.DECRYPTION_KEY' .github/workflows/main.yml; then
+            echo 'Legacy bundle secret reference still exists.' >&2
+            exit 1
+          fi
+
+      - name: Commit encrypted production bundle and clean transfer
+        id: publish
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -rf .bundle-rotation
+          git rm .github/workflows/rotate-bundle-key.yml
+          git add -A bundle.enc bundle.key.enc scripts/unwrap-bundle-key.js .github/workflows/main.yml .bundle-rotation
+          if git ls-files 'src/*' | grep -q .; then
+            echo 'Plain source must never be committed.' >&2
+            exit 1
+          fi
+          git commit -m 'Rotate encrypted full bot bundle key'
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Start full encrypted bot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run main.yml --ref main
+
+      - name: Remove transient key material
+        if: always()
+        run: |
+          rm -f /tmp/vybot-rotation-private.pem /tmp/new-bundle-key.bin /tmp/new-key.rsa /tmp/new-bundle.enc /tmp/verified-source.zip
+          rm -rf /tmp/verified-source
