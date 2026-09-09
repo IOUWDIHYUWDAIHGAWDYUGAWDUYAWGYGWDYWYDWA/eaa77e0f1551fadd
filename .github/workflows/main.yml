@@ -60,7 +60,6 @@ jobs:
           unset DECRYPTION_KEY
           test -f src/deploy-commands.js
           test -f src/index.js
-          node --check bridge/cloudflare-management.cjs
       - name: 🚀 Tam bot komutlarını güncelle
         id: deploy
         if: steps.decrypt.outcome == 'success'
@@ -102,10 +101,15 @@ jobs:
           status=$?
           cat /tmp/bot-runtime.log
           runtime_class=running
+          missing_module=none
           final_status=0
           if [ "$status" -ne 124 ]; then
             final_status=1
-            if grep -q 'Cannot find module' /tmp/bot-runtime.log; then runtime_class=missing_module
+            if grep -q 'Cannot find module' /tmp/bot-runtime.log; then
+              runtime_class=missing_module
+              raw_module=$(sed -n "s/^Error: Cannot find module '\([^']*\)'.*/\1/p" /tmp/bot-runtime.log | head -n 1)
+              missing_module=$(printf '%s' "$raw_module" | tr -cd 'A-Za-z0-9@._/-' | head -c 120)
+              [ -n "$missing_module" ] || missing_module=unknown
             elif grep -Eqi 'disallowed intents|code.?4014' /tmp/bot-runtime.log; then runtime_class=disallowed_intents
             elif grep -Eqi 'invalid token|TokenInvalid' /tmp/bot-runtime.log; then runtime_class=invalid_token
             elif grep -Eqi 'Missing Access|code.?50001' /tmp/bot-runtime.log; then runtime_class=missing_access
@@ -113,6 +117,7 @@ jobs:
             fi
           fi
           echo "runtime_class=$runtime_class" >> "$GITHUB_OUTPUT"
+          echo "missing_module=$missing_module" >> "$GITHUB_OUTPUT"
           exit "$final_status"
       - name: 🩺 Başlangıç aşamasını güvenle kaydet
         if: always()
@@ -122,6 +127,7 @@ jobs:
           DEPLOY_CLASS: ${{ steps.deploy.outputs.failure_class }}
           RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
           RUNTIME_CLASS: ${{ steps.runtime.outputs.runtime_class }}
+          MISSING_MODULE: ${{ steps.runtime.outputs.missing_module }}
         run: |
           python3 - <<'PY'
           import json, os, time
@@ -132,6 +138,7 @@ jobs:
             'deployClass': os.environ.get('DEPLOY_CLASS') or 'none',
             'runtime': os.environ.get('RUNTIME_OUTCOME', 'unknown'),
             'runtimeClass': os.environ.get('RUNTIME_CLASS') or 'none',
+            'missingModule': os.environ.get('MISSING_MODULE') or 'none',
             'targetGuild': '1536835757132751048',
             'recordedAt': int(time.time())
           }
@@ -142,7 +149,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .runtime-status.json
-          git commit -m '[skip ci] Record full bot runtime stage' || exit 0
+          git commit -m '[skip ci] Identify full bot runtime dependency' || exit 0
           git push origin HEAD:main
       - name: 🤖 Tam bot ve güvenli panel bağlantısı
         if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
@@ -152,16 +159,13 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GUILD_ID: '1536835757132751048'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: |
-          echo "Tam bot, Cloudflare paneline kısa ömürlü Actions kimliğiyle bağlanıyor."
-          env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
+        run: env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
       - name: 🛟 Güvenli panel yönetim modu
         if: steps.decrypt.outcome == 'failure'
         env:
           TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-        run: |
-          timeout 17700 node bridge/management-only.cjs || true
+        run: timeout 17700 node bridge/management-only.cjs || true
       - name: 🔄 Sıradaki döngüyü başlat
         if: steps.decrypt.outcome == 'success' && steps.deploy.outcome == 'success' && steps.runtime.outcome == 'success'
         env:
