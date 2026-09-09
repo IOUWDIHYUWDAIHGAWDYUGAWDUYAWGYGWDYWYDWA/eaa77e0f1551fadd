@@ -1,4 +1,5 @@
 name: Rotate encrypted bot bundle
+# Rotation attempt 3 — refresh main and replace stale transfer state
 
 on:
   push:
@@ -18,7 +19,7 @@ concurrency:
 jobs:
   rotate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,19 +32,22 @@ jobs:
           umask 077
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B main origin/main
+          rm -rf .bundle-rotation
           mkdir -p .bundle-rotation
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /tmp/vybot-rotation-private.pem 2>/dev/null
           openssl pkey -in /tmp/vybot-rotation-private.pem -pubout -out .bundle-rotation/public.pem
-          git add .bundle-rotation/public.pem
-          git commit -m 'Stage one-time encrypted bundle recipient'
-          git push origin HEAD:main
+          git add -A .bundle-rotation
+          git commit -m 'Stage fresh one-time encrypted bundle recipient'
+          git push origin main
           echo 'One-time public recipient is ready.'
 
       - name: Wait for encrypted bundle and sealed key
         run: |
           set -euo pipefail
           found=0
-          for attempt in $(seq 1 180); do
+          for attempt in $(seq 1 300); do
             git fetch -q origin main
             if git cat-file -e origin/main:.bundle-rotation/bundle.enc.b64 2>/dev/null && \
                git cat-file -e origin/main:.bundle-rotation/key.rsa.b64 2>/dev/null; then
