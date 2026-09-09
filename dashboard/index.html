@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discord Yönetim Paneli — VYBot</title>
+<meta name="description" content="VYBot Discord sunucu yönetim paneli">
+<meta name="theme-color" content="#07101f">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/dashboard-v2.css">
+<script type="module" src="../assets/js/dashboard-v2.js"></script>
+</head>
+<body data-page="dashboard-v2">
+<a class="vp-skip" href="#vp-content">İçeriğe geç</a>
+<div class="vp-app">
+<header class="vp-topbar">
+ <a class="vp-brand" href="../" aria-label="VYBot ana sayfa"><span class="vp-brandmark"><img src="../assets/img/logo.png" alt=""></span><span>Discord Yönetim Paneli</span></a>
+ <div class="vp-server-select"><img id="top-server-icon" src="../assets/img/logo.png" alt=""><select id="guild-select" aria-label="Yönetilecek sunucu"><option value="">Sunucu seç</option></select><span aria-hidden="true">⌄</span></div>
+ <div class="vp-live"><i id="live-dot"></i><div><strong id="live-title">Bağlantı kontrol ediliyor</strong><small id="live-subtitle">Discord ve bot doğrulanıyor</small></div></div>
+ <div class="nav-actions vp-account-slot"></div>
+ <button class="vp-mobile-menu" id="mobile-menu" aria-label="Panel menüsünü aç" aria-expanded="false">≡</button>
+</header>
+<aside class="vp-sidebar" id="vp-sidebar">
+ <div class="vp-server-card">
+  <div class="vp-server-logo"><img id="side-server-icon" src="../assets/img/logo.png" alt=""></div>
+  <div><strong id="side-server-name">Sunucu seç</strong><small id="side-server-id">Discord hesabını bağla</small><span><i></i><b id="side-server-state">Bağlantı bekleniyor</b></span></div>
+ </div>
+ <nav id="panel-nav" aria-label="Sunucu yönetimi">
+  <button data-view="overview" aria-current="page"><span>▣</span>Genel Bakış</button>
+  <button data-view="members"><span>♙</span>Üyeler</button>
+  <button data-view="roles"><span>⬡</span>Roller</button>
+  <button data-view="channels"><span>⌘</span>Kanallar</button>
+  <button data-view="messages"><span>▤</span>Mesajlar</button>
+  <button data-view="moderation"><span>♢</span>Moderasyon</button>
+  <button data-view="audit"><span>▧</span>Audit Log</button>
+  <button data-view="emojis"><span>☻</span>Emoji & Sticker</button>
+  <button data-view="webhooks"><span>♧</span>Webhooklar</button>
+  <button data-view="server"><span>⚙</span>Sunucu Ayarları</button>
+  <button data-view="bot"><span>✦</span>Bot Ayarları</button>
+ </nav>
+ <div class="vp-security-card"><span>◆</span><div><strong>Güvenli bağlantı</strong><small>Tokenlar tarayıcıya gönderilmez.</small></div></div>
+</aside>
+<main class="vp-main" id="vp-content">
+ <div id="auth-gate" class="vp-gate">
+  <div class="vp-gate-icon"><img src="../assets/img/logo.png" alt=""></div>
+  <span class="vp-kicker">VYBOT KONTROL MERKEZİ</span>
+  <h1>Sunucunu tek yerden yönet.</h1>
+  <p>Canlı üyeler, roller, kanallar, audit kayıtları, webhooklar ve bot modülleri için Discord hesabını bağla.</p>
+  <button id="login-button" class="vp-primary" disabled>Discord ile giriş yap</button>
+  <small id="gate-status">Giriş yapılandırması kontrol ediliyor…</small>
+ </div>
+ <section id="panel" hidden>
+  <div id="loading" class="vp-loading" hidden><i></i><span>Sunucu verileri güvenli bağlantıdan alınıyor…</span></div>
+  <div id="error-banner" class="vp-banner error" hidden role="alert"></div>
+  <div id="content"></div>
+ </section>
+</main>
+</div>
+<div class="vp-toast" id="toast" hidden role="status" aria-live="polite"></div>
+<noscript><div class="vp-noscript">Bu panel için JavaScript gereklidir.</div></noscript>
+</body>
+</html>
