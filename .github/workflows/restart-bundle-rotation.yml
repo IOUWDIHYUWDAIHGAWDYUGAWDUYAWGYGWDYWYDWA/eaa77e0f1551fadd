@@ -1,0 +1,58 @@
+name: Restart secure bundle rotation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restart-bundle-rotation.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Harden rotation, remove helper, and dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/rotate-bundle-key.yml')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('    timeout-minutes: 15', '    timeout-minutes: 20', 1)
+          text = text.replace('          for attempt in $(seq 1 180); do', '          for attempt in $(seq 1 300); do', 1)
+          anchor = "          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'\n          mkdir -p .bundle-rotation\n"
+          replacement = "          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'\n          git fetch origin main\n          git checkout -B main origin/main\n          rm -rf .bundle-rotation\n          mkdir -p .bundle-rotation\n"
+          if '          git checkout -B main origin/main\n' not in text:
+              if anchor not in text:
+                  raise SystemExit('Rotation checkout anchor is missing')
+              text = text.replace(anchor, replacement, 1)
+          text = text.replace('          git add .bundle-rotation/public.pem\n', '          git add -A .bundle-rotation\n', 1)
+          text = text.replace("          git commit -m 'Stage one-time encrypted bundle recipient'\n", "          git commit -m 'Stage fresh one-time encrypted bundle recipient'\n", 1)
+          required = [
+              '    timeout-minutes: 20',
+              '          for attempt in $(seq 1 300); do',
+              '          git checkout -B main origin/main',
+              '          rm -rf .bundle-rotation',
+              '          git add -A .bundle-rotation',
+              "if git ls-files 'src/*' | grep -q .; then",
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit('Rotation hardening validation failed')
+          path.write_text(text, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/restart-bundle-rotation.yml
+          git add .github/workflows/rotate-bundle-key.yml
+          git commit -m 'Harden one-time encrypted bundle rotation'
+          git push origin HEAD:main
+          gh workflow run rotate-bundle-key.yml --ref main
