@@ -57,10 +57,14 @@ jobs:
         id: decrypt
         continue-on-error: true
         env:
-          DECRYPTION_KEY: ${{ secrets.DECRYPTION_KEY }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
+          test -n "$DISCORD_TOKEN"
+          DECRYPTION_KEY="$(node scripts/unwrap-bundle-key.js)"
           test -n "$DECRYPTION_KEY"
-          node decrypt.js "$DECRYPTION_KEY"
+          export DECRYPTION_KEY
+          node decrypt.js
+          unset DECRYPTION_KEY
           test -f src/deploy-commands.js
           test -f src/index.js
           node --check bridge/cloudflare-management.cjs

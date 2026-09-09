@@ -1,5 +1,5 @@
 name: Rotate encrypted bot bundle
-# Rotation attempt 4 — reconstruct the verified transfer and publish a matching key
+# Rotation attempt 5 — publish production artifacts before separate cleanup
 
 on:
   push:
@@ -137,13 +137,12 @@ jobs:
           node --check /tmp/verified-source/src/index.js
           node --check /tmp/verified-source/src/deploy-commands.js
 
-      - name: Wrap new key and update secure loader
+      - name: Wrap new key and verify the pre-published secure loader
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
           set -euo pipefail
           test -n "$DISCORD_TOKEN"
-          mkdir -p scripts
           node - <<'NODE'
           const crypto = require('node:crypto');
           const fs = require('node:fs');
@@ -162,35 +161,6 @@ jobs:
           fs.writeFileSync('bundle.key.enc', wrapped, { mode: 0o600 });
           console.log('New bundle key was wrapped without logging key material.');
           NODE
-          cat > scripts/unwrap-bundle-key.js <<'JS'
-          'use strict';
-          const crypto = require('node:crypto');
-          const fs = require('node:fs');
-          try {
-            const root = process.env.DISCORD_TOKEN;
-            if (!root) throw new Error('missing root secret');
-            const wrapped = fs.readFileSync('bundle.key.enc');
-            const magic = Buffer.from('VYBOTKEY');
-            if (wrapped.length !== 85 || !wrapped.subarray(0, 8).equals(magic) || wrapped[8] !== 1) {
-              throw new Error('invalid wrapped key');
-            }
-            const header = wrapped.subarray(0, 9);
-            const salt = wrapped.subarray(9, 25);
-            const nonce = wrapped.subarray(25, 37);
-            const tag = wrapped.subarray(37, 53);
-            const ciphertext = wrapped.subarray(53);
-            const wrappingKey = crypto.scryptSync(root, salt, 32, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
-            const decipher = crypto.createDecipheriv('aes-256-gcm', wrappingKey, nonce);
-            decipher.setAAD(header);
-            decipher.setAuthTag(tag);
-            const key = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-            if (key.length !== 32) throw new Error('invalid key length');
-            process.stdout.write(key.toString('hex'));
-          } catch {
-            console.error('Encrypted bot key could not be opened.');
-            process.exit(1);
-          }
-          JS
           node --check scripts/unwrap-bundle-key.js
           node - <<'NODE'
           const crypto = require('node:crypto');
@@ -202,59 +172,29 @@ jobs:
           if (!crypto.timingSafeEqual(Buffer.from(result.stdout), Buffer.from(expected))) throw new Error('Wrapped key mismatch');
           console.log('Wrapped key round-trip verified.');
           NODE
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('.github/workflows/main.yml')
-          text = path.read_text(encoding='utf-8')
-          start_marker = '      - name: 🔓 Şifreli kodları çöz\n'
-          end_marker = '      - name: 🚀 Tam bot komutlarını güncelle\n'
-          if text.count(start_marker) != 1 or text.count(end_marker) != 1:
-              raise SystemExit('Main workflow decryption block was not found uniquely')
-          start = text.index(start_marker)
-          end = text.index(end_marker, start)
-          secret_expression = '$' + '{{ secrets.DISCORD_TOKEN }}'
-          replacement = (
-              '      - name: 🔓 Şifreli kodları çöz\n'
-              '        id: decrypt\n'
-              '        continue-on-error: true\n'
-              '        env:\n'
-              f'          DISCORD_TOKEN: {secret_expression}\n'
-              '        run: |\n'
-              '          test -n "$DISCORD_TOKEN"\n'
-              '          DECRYPTION_KEY="$(node scripts/unwrap-bundle-key.js)"\n'
-              '          test -n "$DECRYPTION_KEY"\n'
-              '          export DECRYPTION_KEY\n'
-              '          node decrypt.js\n'
-              '          unset DECRYPTION_KEY\n'
-              '          test -f src/deploy-commands.js\n'
-              '          test -f src/index.js\n'
-              '          node --check bridge/cloudflare-management.cjs\n'
-          )
-          path.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
-          PY
           grep -q 'scripts/unwrap-bundle-key.js' .github/workflows/main.yml
           if grep -q 'secrets.DECRYPTION_KEY' .github/workflows/main.yml; then
             echo 'Legacy bundle secret reference still exists.' >&2
             exit 1
           fi
 
-      - name: Commit encrypted production bundle and clean transfer
+      - name: Commit encrypted production bundle
         id: publish
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          rm -rf .bundle-rotation
-          git rm -r .bundle-transfer
-          git rm .github/workflows/rotate-bundle-key.yml
-          git rm -f .github/workflows/restart-bundle-rotation.yml 2>/dev/null || true
-          git add -A
+          git add bundle.enc bundle.key.enc
           if git ls-files 'src/*' | grep -q .; then
             echo 'Plain source must never be committed.' >&2
             exit 1
           fi
-          test ! -e .bundle-rotation
-          test ! -e .bundle-transfer
+          test -f bundle.enc
+          test -f bundle.key.enc
+          if git diff --cached --quiet; then
+            echo 'No encrypted production changes were staged.' >&2
+            exit 1
+          fi
           git commit -m 'Rotate encrypted full bot bundle key'
           git push origin HEAD:main
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
