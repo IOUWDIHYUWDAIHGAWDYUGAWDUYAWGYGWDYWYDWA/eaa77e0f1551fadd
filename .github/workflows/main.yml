@@ -39,6 +39,19 @@ jobs:
             git commit -m '[skip ci] Encrypt VYBot 2 source' || true
             git push || true
             cp -a /tmp/vybot-src src
+          elif [ -f scripts/apply-settings-v3.py ]; then
+            npm run decrypt
+            python3 scripts/apply-settings-v3.py
+            npm run check
+            cp -a src /tmp/vybot-src
+            npm run encrypt
+            git rm -f scripts/apply-settings-v3.py scripts/settings-core.snippet scripts/settings-card.snippet
+            git add bundle.enc yeniwebsite/assets/js/data/commands.js
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git commit -m '[skip ci] Upgrade visual settings control center' || true
+            git push || true
+            cp -a /tmp/vybot-src src
           else
             npm run decrypt
             npm run check
