@@ -1,0 +1,1 @@
+'use strict';require('dotenv').config();const fs=require('node:fs'),{spawnSync}=require('node:child_process');if(!fs.existsSync('src/index.js')){const x=spawnSync(process.execPath,['decrypt.js'],{stdio:'inherit',env:process.env});if(x.status)process.exit(x.status);}require('./src/index');
