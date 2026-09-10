@@ -10,7 +10,7 @@ permissions:
   actions: write
   id-token: write
 concurrency:
-  group: vybot-production
+  group: vybot-host
   cancel-in-progress: true
 jobs:
   bot:
