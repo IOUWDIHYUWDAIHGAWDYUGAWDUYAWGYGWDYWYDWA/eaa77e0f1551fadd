@@ -1,0 +1,18 @@
+async function settingsDashboard({guildName,guildIcon='',section='Genel Bakış',subtitle='',items=[]}){
+ const w=1200,h=700,c=createCanvas(w,h),x=c.getContext('2d');
+ const bg=x.createLinearGradient(0,0,w,h);bg.addColorStop(0,'#070B16');bg.addColorStop(.48,'#101A33');bg.addColorStop(1,'#080D1A');x.fillStyle=bg;x.fillRect(0,0,w,h);
+ const glow=x.createRadialGradient(1050,30,0,1050,30,520);glow.addColorStop(0,'rgba(88,101,242,.32)');glow.addColorStop(1,'rgba(88,101,242,0)');x.fillStyle=glow;x.fillRect(0,0,w,h);
+ x.fillStyle='rgba(255,255,255,.035)';round(x,28,28,w-56,h-56,30);x.fill();x.strokeStyle='rgba(130,145,255,.18)';x.lineWidth=2;x.stroke();
+ x.fillStyle='rgba(7,11,24,.72)';round(x,52,52,265,h-104,24);x.fill();x.strokeStyle='rgba(255,255,255,.08)';x.stroke();
+ if(guildIcon)await avatar(x,guildIcon,82,84,72);else{const ag=x.createLinearGradient(82,84,154,156);ag.addColorStop(0,'#7C86FF');ag.addColorStop(1,'#4553D8');x.fillStyle=ag;round(x,82,84,72,72,20);x.fill();x.fillStyle='#fff';x.font=`800 24px ${FONT}`;x.textAlign='center';x.fillText('VY',118,130);}
+ x.textAlign='left';x.fillStyle='#FFFFFF';x.font=`700 24px ${FONT}`;x.fillText(fit(x,guildName,130),170,112);x.fillStyle='#7784A8';x.font=`600 15px ${FONT}`;x.fillText('SUNUCU KONTROLÜ',170,140);
+ const nav=['Genel Bakış','Güvenlik','Roller','Ticket','Kayıtlar'];let ny=205;for(const label of nav){const active=label===section;if(active){x.fillStyle='rgba(88,101,242,.22)';round(x,74,ny-29,220,48,12);x.fill();x.fillStyle='#6674FF';round(x,74,ny-29,5,48,3);x.fill();}x.fillStyle=active?'#FFFFFF':'#7F8BAB';x.font=`${active?700:600} 18px ${FONT}`;x.fillText(label,96,ny);ny+=66;}
+ x.fillStyle='#5865F2';x.font=`800 17px ${FONT}`;x.fillText('VYBOT CONTROL',82,h-91);x.fillStyle='#56617E';x.font=`500 14px ${FONT}`;x.fillText('v2 • güvenli yönetim',82,h-68);
+ x.fillStyle='#8794B7';x.font=`700 15px ${FONT}`;x.fillText('YÖNETİM MERKEZİ  /  '+section.toUpperCase(),356,86);
+ x.fillStyle='#FFFFFF';x.font=`800 38px ${FONT}`;x.fillText(section,356,137);x.fillStyle='#94A0BF';x.font=`500 19px ${FONT}`;x.fillText(fit(x,subtitle,740),356,171);
+ x.fillStyle='rgba(255,255,255,.08)';x.fillRect(356,196,780,1);
+ const display=items.slice(0,4),cols=2,boxW=365,boxH=178,gap=22,startY=228;
+ for(let i=0;i<display.length;i++){const it=display[i],col=i%cols,row=Math.floor(i/cols),bx=356+col*(boxW+gap),by=startY+row*(boxH+gap);x.fillStyle='rgba(255,255,255,.045)';round(x,bx,by,boxW,boxH,20);x.fill();x.strokeStyle=it.enabled?'rgba(86,209,143,.28)':'rgba(255,255,255,.085)';x.lineWidth=2;x.stroke();x.fillStyle=it.enabled?'#52D991':'#65708D';x.beginPath();x.arc(bx+31,by+31,8,0,Math.PI*2);x.fill();x.fillStyle='#F5F7FF';x.font=`700 22px ${FONT}`;x.fillText(fit(x,it.name,270),bx+52,by+39);x.fillStyle='#8390AF';x.font=`500 16px ${FONT}`;x.fillText(fit(x,it.desc,310),bx+24,by+76);x.fillStyle=it.enabled?'rgba(82,217,145,.12)':'rgba(255,255,255,.055)';round(x,bx+24,by+106,boxW-48,44,11);x.fill();x.fillStyle=it.enabled?'#7BE8AD':'#8A94AD';x.font=`700 16px ${FONT}`;x.fillText(fit(x,it.value||(it.enabled?'AKTİF':'KAPALI'),boxW-88),bx+40,by+134);}
+ x.fillStyle='#5E6987';x.font=`500 15px ${FONT}`;x.fillText('Aşağıdaki kontrollerden bir bölüm seçerek ayarları anında değiştir.',356,h-70);
+ return c.toBuffer('image/png');
+}
