@@ -1,102 +1,67 @@
-name: vybot 24/7 GitHub Actions Host
-
+name: VYBot Production
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 */5 * * *'
   workflow_dispatch:
-  push:
-    branches: [ main ]
-
 permissions:
   contents: write
   actions: write
   id-token: write
-
 concurrency:
-  group: vybot-host
+  group: vybot-production
   cancel-in-progress: true
-
 jobs:
-  run-bot:
+  bot:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
-      - name: 📥 Kodu Çek
-        uses: actions/checkout@v4
-
-      - name: 🟢 Node.js 22 Kur
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: ⚡ Bağımlılık önbelleği
-        id: cache-tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            /usr/local/bin/yt-dlp
-          key: tools-v3-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: 🎵 yt-dlp Kur
-        if: steps.cache-tools.outputs.cache-hit != 'true'
-        run: |
-          sudo curl -L -s https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
-
-      - name: 📦 Bağımlılıkları yükle ve doğrula
-        run: |
-          npm ci --prefer-offline --no-audit --no-fund
-          npm install --no-save --no-audit --no-fund sql.js@1.13.0 node-cron@3.0.3
-          node -e "require.resolve('sql.js'); require.resolve('node-cron'); console.log('Bot bağımlılıkları hazır')"
-
-      - name: 🔓 Şifreli kodları çöz
-        id: decrypt
-        continue-on-error: true
+      - run: npm ci --no-audit --no-fund
+      - name: Kaynağı doğrula ve şifrele
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
-          test -n "$DISCORD_TOKEN"
-          DECRYPTION_KEY="$(node scripts/unwrap-bundle-key.js)"
-          test -n "$DECRYPTION_KEY"
-          export DECRYPTION_KEY
-          node decrypt.js
-          unset DECRYPTION_KEY
-          test -f src/deploy-commands.js
-          test -f src/index.js
-
-      - name: 🚀 29 slash komutunu güncelle
-        if: steps.decrypt.outcome == 'success'
+          if [ -f src/index.js ]; then
+            npm run check
+            cp -a src /tmp/vybot-src
+            npm run encrypt
+            git rm -r src
+            git rm -f bundle.key.enc 2>/dev/null || true
+            git add bundle.enc
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git commit -m '[skip ci] Encrypt VYBot 2 source' || true
+            git push || true
+            cp -a /tmp/vybot-src src
+          else
+            npm run decrypt
+            npm run check
+          fi
+      - name: 34 slash komutunu kaydet
         env:
-          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GUILD_ID: '1536835757132751048'
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: node src/deploy-commands.js
-
-      - name: 🤖 Tam bot ve güvenli panel bağlantısı
-        if: steps.decrypt.outcome == 'success'
+        run: npm run deploy
+      - name: Görsel botu ve web köprüsünü başlat
         env:
-          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          TOKEN: ${{ secrets.DISCORD_TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           GUILD_ID: '1536835757132751048'
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          echo "Tam bot ve güvenli panel bağlantısı başlatılıyor."
-          env -u VYBOT_API_PORT timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js || true
-
-      - name: 🛟 Güvenli panel yönetim modu
-        if: steps.decrypt.outcome == 'failure'
+          set +e
+          timeout 17700 node --require ./bridge/cloudflare-management.cjs src/index.js
+          code=$?
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then exit "$code"; fi
+      - name: Sonraki döngü
+        if: always()
         env:
-          TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-        run: timeout 17700 node bridge/management-only.cjs || true
-
-      - name: 🔄 Sıradaki döngüyü başlat
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: gh workflow run main.yml || true
